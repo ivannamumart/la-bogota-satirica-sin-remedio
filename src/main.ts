@@ -282,7 +282,7 @@ function enter(site:Site){if(lock||mode==='interior')return;roadHint.classList.r
  currentSite=site;stage=makeStage(site.id);scene.add(stage.root);world.visible=false;world.remove(hero.root);scene.add(hero.root);
  hero.root.quaternion.identity();hero.root.rotation.y=Math.PI;hero.root.scale.setScalar(1.08);hero.root.position.copy(stage.heroStart);
  stage.actors.forEach(a=>{originalActorPos.set(a,a.root.position.clone());originalActorRot.set(a,a.root.rotation.y)});
- showSiteCaption(site);orbit.enabled=false;orbit.autoRotate=false;camera.up.set(0,1,0);camera.fov=52;camera.updateProjectionMatrix();camera.position.set(1.15,3.0,4.36);camera.lookAt(0,1.48,-.85);
+ showSiteCaption(site);orbit.enabled=false;orbit.autoRotate=false;camera.up.set(0,1,0);camera.fov=window.innerWidth<720?64:52;camera.updateProjectionMatrix();camera.position.set(window.innerWidth<720?.05:1.15,3.0,window.innerWidth<720?6.9:4.36);camera.lookAt(0,1.48,-.85);
  phase='arrival';stageTime=0;currentLine=-1;choiceIndex=-1;showCaption(null);hideChoices();hint.classList.remove('visible');mode='interior';refreshMobile();
  })}
 function leave(){if(!stage||lock)return;fadeTo(()=>{
@@ -328,8 +328,11 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
  }else if(mode==='interior'&&stage){
   const actor=activeBubbleActor;const cinematic=phase==='canonical'||phase==='branch';
   const targetActor=actor?.getWorldPosition(new T.Vector3());
-  const desired=new T.Vector3(cinematic&&targetActor?1.1+targetActor.x*.10:1.2,3.15+Math.sin(t*.25)*.07,4.55);
-  const aim=new T.Vector3(cinematic&&targetActor?targetActor.x*.24:0,1.53,-1.05);
+  const portrait=window.innerWidth<720&&window.innerHeight>window.innerWidth;
+  const desired=portrait
+    ?new T.Vector3(.06,3.15+Math.sin(t*.25)*.06,6.8)
+    :new T.Vector3(cinematic&&targetActor?1.1+targetActor.x*.10:1.2,3.15+Math.sin(t*.25)*.07,4.55);
+  const aim=new T.Vector3(portrait?0:cinematic&&targetActor?targetActor.x*.24:0,1.53,portrait?-.35:-1.05);
   camera.position.lerp(desired,1-Math.exp(-dt*1.6));camera.up.set(0,1,0);camera.lookAt(aim);locateSpeech()
  }
 }

@@ -107,3 +107,9 @@ body.night .masthead,body.night .moon-control,body.night .icon-control,body.nigh
  .choice-text strong{font-size:17px}
  .choice-text small{font-size:10px}
 }
+
+/* V08 · ajuste real para legibilidad en pantallas verticales */
+@media(max-width:720px){
+ .stage-aside{top:26%;left:17px;max-width:74vw;color:#172820;text-shadow:0 1px 1px rgba(255,253,242,.94),0 0 16px rgba(250,248,239,.96);transition:opacity .2s,transform .2s}
+ .stage-aside p{font-size:clamp(19px,5.4vw,24px);line-height:1.26;font-weight:500}
+}
