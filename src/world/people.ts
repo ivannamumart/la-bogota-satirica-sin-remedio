@@ -34,8 +34,8 @@ export function character(style:PersonaStyle='npc',scale=1):Person{
  }
  // Brazos segmentados: pivote verdadero para gestos, caminar, escribir o bailar.
  const mkArm=(side:number)=>{const a=new T.Group();a.position.set(side*.32,1.35,0);root.add(a);
- const sleeve=new T.Mesh(new T.CylinderGeometry(.094,.126,.49,12),cloth);sleeve.position.set(0,-.28,0);a.add(sleeve);
-  const shoulder=sphere(a,.145,cloth,0,-.035,0,2);shoulder.scale.set(.82,.74,.9);
+ const sleeve=new T.Mesh(new T.CylinderGeometry(.085,.105,.49,12),cloth);sleeve.position.set(0,-.28,0);a.add(sleeve);
+  const shoulder=sphere(a,.112,cloth,0,-.035,0,2);shoulder.scale.set(.90,.84,.93);
  const cuff=cylinder(a,.095,.20,cloth,0,-.53,.005,9);
  sphere(a,.087,skin,0,-.68,.012,1);return a;};
  const leftArm=mkArm(-1),rightArm=mkArm(1);
@@ -74,6 +74,24 @@ export function character(style:PersonaStyle='npc',scale=1):Person{
    const moustache=block(head,.17,.022,.02,paint('slate'),0,-.048,.20);moustache.rotation.z=.03;
  }
  if(style==='alicia'){sphere(body,.073,paint('bluegray',0x679ab5),.20,1.13,.25,1)}
+ if(style==='escobar'){
+   const moustache=paint('charcoal',0x655950);
+   const left=sphere(head,.068,moustache,-.060,-.040,.202,1);left.scale.set(1,.29,.37);left.rotation.z=-.14;
+   const right=sphere(head,.068,moustache,.060,-.040,.202,1);right.scale.set(1,.29,.37);right.rotation.z=.14;
+   const sidepart=pathStroke(head,[new T.Vector3(-.075,.27,.135),new T.Vector3(-.036,.35,.07),new T.Vector3(.02,.37,.025)],0x403631,.008,.86);
+   for(let k=0;k<3;k++)block(body,.012,.21,.019,paint('slate',0x88857e),-.16+k*.16,.93,.22);
+ }
+ if(style==='focion'||style==='diego'){
+   for(const sx of [-1,1]){
+     torus(head,.088,.009,paint('gold',0xa3a096),sx*.102,.078,.205);
+     block(head,.070,.015,.013,paint('gold',0xa3a096),sx*.2,.08,.124);
+   }
+   block(head,.064,.012,.017,paint('gold',0xa3a096),0,.083,.222);
+ }
+ if(style==='fina'||style==='leonor'){
+   for(const sx of [-1,1])sphere(head,.027,paint('gold',0xc9a38a),sx*.203,-.095,.046,1);
+ }
+
  if(style==='diego'){for(let i=0;i<13;i++)sphere(body,.021,paint(['terracotta','olive','bluegray'][i%3]),Math.sin(i*13)*.22,1+i*.026%(.55),.265,0)}
  // Estructura común de animación: respiración y gestos contextuales de cada figura.
  const update=(t:number,moving=false,express=1)=>{

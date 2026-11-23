@@ -12,9 +12,9 @@ import {DIALOGOS,type Linea} from './story/dialogues';
 import './ui/styles.css';
 const el=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const mount=el('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about'),roadHint=el('road-hint');
-const scene=new T.Scene(),camera=new T.PerspectiveCamera(37,window.innerWidth/window.innerHeight,.10,260);
+const scene=new T.Scene(),camera=new T.PerspectiveCamera(35,window.innerWidth/window.innerHeight,.10,260);
 const targetOverview=new T.Vector3(0,5.4,0);
-camera.position.set(-15,33,37);camera.lookAt(targetOverview);
+camera.position.set(0,32,40);camera.lookAt(targetOverview);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.35));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.10;renderer.shadowMap.enabled=false;mount.appendChild(renderer.domElement);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.copy(targetOverview);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=29;orbit.maxDistance=65;orbit.maxPolarAngle=Math.PI*.67;orbit.minPolarAngle=.11;orbit.rotateSpeed=.46;orbit.autoRotate=true;orbit.autoRotateSpeed=.20;
@@ -35,6 +35,17 @@ for(const site of [...buildings.values(),...world.children.filter(o=>o.name.star
  });
 }
 const cameraRay=new T.Ray(),cameraHit=new T.Vector3();
+const cameraVolumes=[...buildings.values(),...world.children.filter(o=>o.name.startsWith('hito_no_jugable_'))]
+ .map(o=>new T.Box3().setFromObject(o));
+function occlusionPenalty(from:T.Vector3,to:T.Vector3){
+ const ray=new T.Ray(from,to.clone().sub(from).normalize()),dist=from.distanceTo(to);let hits=0;
+ for(const box of cameraVolumes){
+   if(box.containsPoint(from))continue;
+   const hit=ray.intersectBox(box,new T.Vector3());if(hit&&from.distanceTo(hit)<dist-.25)hits++;
+ }
+ return hits;
+}
+
 function clearDistance(focus:T.Vector3,wanted:T.Vector3){
  const diff=wanted.clone().sub(focus),length=diff.length();if(length<.01)return 0;
  cameraRay.origin.copy(focus);cameraRay.direction.copy(diff).divideScalar(length);
@@ -50,14 +61,28 @@ function clearDistance(focus:T.Vector3,wanted:T.Vector3){
  * la cámara entre fachadas de tamaño fantástico. Conserva la dirección de marcha.
  */
 function walkingShot(){
- // Seguimiento oblicuo a escala de diorama: distancia y altura para evitar
- // cubiertas que se interponen entre la cámara, el personaje y las calles.
+ // Encuadre sobre el hombro adaptable: evita edificios entre Escobar y la cámara.
+ // La alternativa más vertical se reserva para los cruces visualmente congestionados.
  const right=new T.Vector3(-lastHeroDir.z,0,lastHeroDir.x);
- const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,1.15).add(new T.Vector3(0,.85,0));
- const wanted=lastHeroPos.clone().addScaledVector(lastHeroDir,-8.3).addScaledVector(right,6.5).add(new T.Vector3(0,13.2,0));
- return {focus,wanted};
+ const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,.48).add(new T.Vector3(0,.67,0));
+ const options=[
+   lastHeroPos.clone().addScaledVector(lastHeroDir,-3.50).addScaledVector(right, 2.6).add(new T.Vector3(0,10.3,0)),
+   lastHeroPos.clone().addScaledVector(lastHeroDir,-3.50).addScaledVector(right,-2.6).add(new T.Vector3(0,10.3,0)),
+   lastHeroPos.clone().addScaledVector(lastHeroDir,-4.65).addScaledVector(right,4.3).add(new T.Vector3(0,12.6,0)),
+   lastHeroPos.clone().addScaledVector(lastHeroDir,-4.65).addScaledVector(right,-4.3).add(new T.Vector3(0,12.6,0)),
+   lastHeroPos.clone().addScaledVector(lastHeroDir,-1.05).add(new T.Vector3(0,12.5,0))
+ ];
+ let idx=0,best=Infinity;
+ for(let i=0;i<options.length;i++){
+   const penalty=occlusionPenalty(focus,options[i])*100+i*.12;
+   if(penalty<best){best=penalty;idx=i}
+ }
+ return {focus,wanted:options[idx]};
 }
 const hero=character('escobar',.50);world.add(hero.root);
+// Sombra natural bajo los pies, sin marcadores de interfaz sobre el protagonista.
+const footShade=new T.Mesh(new T.CircleGeometry(.34,24),new T.MeshBasicMaterial({color:0x314135,transparent:true,opacity:.20,depthWrite:false,side:T.DoubleSide}));
+footShade.rotation.x=-Math.PI/2;footShade.position.y=-.065;hero.root.add(footShade);
 type Mode='overview'|'walk'|'interior'|'transition';type Phase='arrival'|'canonical'|'choice'|'branch'|'complete';
 let mode:Mode='overview',phase:Phase='arrival',stage:Stage|null=null,currentSite:Site|null=null,lock=false,paused=false;
 let track:Track=routes.find(r=>NODES[r.from].id==='s1'&&NODES[r.to].id==='s2')??routes[0],distance=1.6,direction:1|-1=1;
@@ -161,11 +186,11 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
   camera.position.lerp(desired,1-Math.exp(-dt*1.7));camera.up.set(0,1,0);camera.lookAt(aim)
  }
 }
-function toOverview(){if(mode==='interior'){leave();return}camera.fov=37;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-15,33,37);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
+function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(0,32,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
 function beginWalking(){if(mode!=='overview')return;camera.fov=50;camera.updateProjectionMatrix();mode='walk';orbit.enabled=false;orbit.autoRotate=false;const {focus,wanted}=walkingShot();camera.position.copy(wanted);camera.up.set(0,1,0);camera.lookAt(focus);caption.classList.remove('visible')}
 function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt=Math.sin(p*2*Math.PI+.45),daylight=T.MathUtils.smoothstep(alt,-.20,.65),golden=Math.pow(1-Math.abs(alt-.08),4);
- sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=.48+3.0*daylight;sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
- sky.intensity=.68+1.25*daylight;fill.intensity=.40+.54*daylight;starMat.opacity=Math.pow(1-daylight,2)*.80;
+ sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=(.48+3.0*daylight)*(mode==='interior'?.26:1);sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
+ sky.intensity=(.68+1.25*daylight)*(mode==='interior'?.52:1);fill.intensity=(.40+.54*daylight)*(mode==='interior'?.38:1);starMat.opacity=Math.pow(1-daylight,2)*.80;
  const top=new T.Color(0x27364b).lerp(new T.Color(0xdce9e5),daylight),bot=new T.Color(0x37475a).lerp(new T.Color(0xf2e7dc),daylight);top.lerp(new T.Color(0xd0b5a7),golden*.1);bot.lerp(new T.Color(0xe5c2a0),golden*.2);
  document.documentElement.style.setProperty('--sky-top','#'+top.getHexString());document.documentElement.style.setProperty('--sky-bottom','#'+bot.getHexString());renderer.toneMappingExposure=.95+daylight*.16;document.body.classList.toggle('night',daylight<.24)
 }

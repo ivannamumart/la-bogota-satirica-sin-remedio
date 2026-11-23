@@ -48,6 +48,19 @@ export function tree(kind:'urban'|'garden'|'cerro'='urban',height=1.7){
 }
 function trees(g:T.Group,pts:[number,number,number][],kind:'urban'|'garden'|'cerro'='urban'){pts.forEach(([x,z,s])=>{const t=tree(kind,s);t.position.set(x,0,z);g.add(t)})}
 /** Una pequeña isla paisajística imperfecta; evita los volúmenes que parecen pegados al globo. */
+let shadeTexture:T.CanvasTexture|null=null;
+function contactShadow(g:T.Group,w:number,d:number){
+ if(!shadeTexture){
+   const c=document.createElement('canvas');c.width=c.height=128;
+   const cx=c.getContext('2d')!;
+   const grd=cx.createRadialGradient(64,64,10,64,64,63);
+   grd.addColorStop(0,'rgba(39,45,35,.30)');grd.addColorStop(.54,'rgba(47,53,39,.15)');grd.addColorStop(1,'rgba(47,53,39,0)');
+   cx.fillStyle=grd;cx.fillRect(0,0,128,128);
+   shadeTexture=new T.CanvasTexture(c);
+ }
+ const mesh=new T.Mesh(new T.PlaneGeometry(w,d),new T.MeshBasicMaterial({map:shadeTexture,transparent:true,depthWrite:false,opacity:.85,side:T.DoubleSide}));
+ mesh.rotation.x=-Math.PI/2;mesh.position.y=.036;mesh.renderOrder=3;g.add(mesh);
+}
 function gardenBase(g:T.Group,r:number,kind:'garden'|'stone'|'night'|'quiet'='garden'){
  const segments=56, rings=7, positions:number[]=[],colors:number[]=[],faces:number[]=[];
  const core=new T.Color(kind==='stone'?0xc2b9a6:kind==='night'?0xaaa9a1:kind==='quiet'?0xa5b0a0:0xabbba3);
@@ -61,6 +74,7 @@ function gardenBase(g:T.Group,r:number,kind:'garden'|'stone'|'night'|'quiet'='ga
  }
  const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.setIndex(faces);geometry.computeVertexNormals();
  const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({vertexColors:true,roughness:1,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}));mesh.receiveShadow=true;g.add(mesh);
+ contactShadow(g,r*1.50,r*1.17);
 }
 function brickCourses(g:T.Group,w:number,h:number,front:number){
  // Hiladas de ladrillo dibujadas discretamente: escala histórica, no textura de videojuego.
@@ -160,6 +174,11 @@ function nightclub(g:T.Group){const front=1.41;
 }
 function bar(g:T.Group){const z=1.35;cub(g,3.35,2.50,2.62,paint('ochre',0x947960),0,1.25);
  for(let i=0;i<4;i++){window(g,-1.2+i*.8,1.41,z,.48,.7,false,false)}
+ // El Oasis también tiene fachada trasera; la rotación libre no muestra paredes vacías.
+ const rear=new T.Group();rear.rotation.y=Math.PI;g.add(rear);
+ for(let i=0;i<4;i++)window(rear,-1.2+i*.8,1.43,z,.44,.61,false,true);
+ for(const sx of [-1,1])cub(rear,.11,2.30,.15,STONE,sx*1.57,1.15,z+.05);
+
  doorway(g,z,.82,1.40);cub(g,3.55,.14,.66,TILE,0,1.94,z+.21);sign(g,'MUSIC BAR · EL OASIS',3.03,.35,0,2.30,z+.12,'#eedab4','#4c5c4f');
  cub(g,3.3,.09,.42,CREAM,0,.24,z+.42);
  for(let i=0;i<3;i++)cub(g,.04,.23,.20,WOOD,-1.04+i*1.04,.34,z+.52);
