@@ -24,7 +24,7 @@ function mountain(x:number,z:number){
 }
 export function terrainY(x:number,z:number){
  const r=Math.hypot(x,z);
- const ripple=.060*Math.sin(x*1.6+z*.35)*Math.cos(z*1.8)+.040*Math.sin(x*3.4-z*1.3);
+ const ripple=.17+.040*Math.sin(x*1.6+z*.35)*Math.cos(z*1.8)+.025*Math.sin(x*3.4-z*1.3);
  const v=baseHeight(x,z)+mountain(x,z)+ripple*(1-smooth(8.8,10.2,r));
  return v;
 }
@@ -140,7 +140,7 @@ export function createPlanet(){
  const buildings=new Map<PlaceId,T.Group>();
  for(const p of PLACES){if(p.id==='cerros')continue;
   const g=buildLandmark(p.id),entry=NODES.find(n=>n.entry===p.id);
-  g.position.copy(terrain(p.x,p.z,.02));const dx=(entry?.x??p.x)-(p.x),dz=(entry?.z??p.z)-(p.z);g.rotation.y=Math.atan2(dx,dz);g.scale.setScalar(p.scale);
+  g.position.copy(terrain(p.x,p.z,.02));const dx=(entry?.x??p.x)-(p.x),dz=(entry?.z??p.z)-(p.z);g.rotation.y=Math.atan2(dx,dz);g.scale.setScalar(p.scale*.66);
   // La capilla, el club y las viviendas tienen materialidad de región, no zócalos enormes.
   world.add(g);buildings.set(p.id,g);
  }
