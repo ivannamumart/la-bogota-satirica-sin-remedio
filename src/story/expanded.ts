@@ -32,7 +32,7 @@ export const DIALOGOS:Record<string,Escena>={
   A('Las piezas quedan suspendidas entre una jugada y una discusión política.','P-729'),
   C('Federico','Huele a mierda, Escobar.','P-727'),
   C('Ana María','Escobar ya no sabe qué echarse.','P-728'),
-  C('Diego León','Nada cura el hedor de la corrupción burguesa.','P-729'),
+  C('Diego León','nada cura el hedor de la corrupción burguesa.','P-729'),
   A('Diego León observa el tablero. Nadie parece dispuesto a ceder su turno.','P-729')
  ],bifurcaciones:[
   B('La asamblea de los propietarios','La retórica revolucionaria ante la propiedad privada.',[
@@ -47,7 +47,7 @@ export const DIALOGOS:Record<string,Escena>={
   A('Un aviso titila: Music Bar, Comida y Dancing.','P-260'),
   A('Al fondo, cuatro hombres ocupan una mesa como si fuera una tertulia perpetua.','P-294'),
   C('Edén','Vea, maestro, le presento: Rubén, Ramón, Narciso. Y yo, que soy Edén. Sin protocolo: aquí todos somos poetas.','P-294'),
-  C('Narciso','Lindo nombre.','P-297'),
+  C('Narciso','Lindo nombre','P-297'),
   A('Los vasos, el humo y las voces forman una pequeña república de poetas.','P-297')
  ],bifurcaciones:[
   B('El premio de los ausentes','El prestigio puede preceder a la lectura.',[
@@ -99,7 +99,7 @@ export const DIALOGOS:Record<string,Escena>={
  ]},
  jockey:{inicio:[
   A('En el salón todos parecen saber a qué familia pertenece cada invitado.','P-3395'),
-  C('Prima adolescente','Ahora en abril papá me quiere hacer un baile blanco en el Jockey.','P-3395'),
+  C('Prima adolescente','Por ejemplo ahora en abril papá me quiere hacer un baile blanco en el Jockey.','P-3395'),
   C('Prima adolescente','Que además ya no se usa dar bailes blancos, y menos en el Jockey.','P-3395'),
   A('La queja de la prima no altera el protocolo de la sala.','P-3395')
  ],bifurcaciones:[
