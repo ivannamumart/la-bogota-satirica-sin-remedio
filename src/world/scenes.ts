@@ -96,7 +96,7 @@ function benchPew(g:T.Group,x:number,z:number,angle=0){const b=new T.Group();b.p
  for(let xx of [-.83,.83])block(b,.11,.52,.45,paint('wood'),xx,.28,-.18);
 }
 function actor(stage:Stage,style:PersonaStyle,x:number,z:number,rot=0,scale=1){const p=character(style,scale);p.root.position.set(x,0,z);p.root.rotation.y=rot;stage.root.add(p.root);stage.actors.push(p);return p;}
-function decorTrees(g:T.Group,count=11){for(let i=0;i<count;i++){const t=tree(i%3?'leaf':'pine',1.25+rng()*.68);t.position.set((rng()-.5)*10,0,(rng()-.5)*8.5);g.add(t)}}
+function decorTrees(g:T.Group,count=11){for(let i=0;i<count;i++){const t=tree('leaf',1.25+rng()*.68);t.position.set((rng()-.5)*10,0,(rng()-.5)*8.5);g.add(t)}}
 function baseStage(id:PlaceId):Stage{const root=new T.Group();root.name=`escena_${id}`;
  root.add(new T.HemisphereLight(0xe8ebdb,0x6c6f63,1.25));
  const key=new T.DirectionalLight(id==='unicornio'?0xd0bbef:id==='cementerio'?0xd4e2ed:0xffe0ba,2.7);key.position.set(-5,9,7);key.castShadow=false;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-11;key.shadow.camera.right=11;key.shadow.camera.top=10;key.shadow.camera.bottom=-10;root.add(key);
@@ -109,11 +109,16 @@ export function makeStage(id:PlaceId):Stage{
   const theme=id==='oasis'?'olive':id==='unicornio'?'slate':id==='jockey'||id==='casa_familiar'?'stone':id==='taller'?'stucco':'plaster';
   room(g,theme,id==='unicornio'?'charcoal':id==='porciuncula'?'stone':'wood',12,11,id==='porciuncula'?6.4:4.9);
   // Una puerta legible para salir caminando, como continuidad física de la llegada.
-  const portal=new T.Group();portal.position.set(-4.9,0,4.85);portal.rotation.y=-.24;g.add(portal);
-  block(portal,1.56,2.9,.12,paint('wood'),0,1.45,0);
-  block(portal,1.20,2.58,.08,paint('charcoal'),0,1.36,-.08);
-  block(portal,1.10,2.48,.09,paint('cedar'),0,1.29,-.16);
-  sphere(portal,.048,paint('gold'),.39,1.25,-.10,1);
+  // Acceso abierto alineado con el recorrido: se sale retrocediendo por el vano.
+  // El marco en lugar de una hoja opaca permite ver la escena y no bloquea la cámara.
+  const portal=new T.Group();portal.position.set(0,0,4.87);g.add(portal);
+  const jamb=paint('cedar',0x765942),trim=paint('stone',0xc9b49d);
+  for(const side of [-1,1]){
+    block(portal,.19,2.76,.17,jamb,side*.79,1.38,0);
+    block(portal,.08,2.68,.21,trim,side*.68,1.38,-.06);
+  }
+  block(portal,1.78,.23,.20,jamb,0,2.83,0);
+  block(portal,1.46,.09,.30,trim,0,.045,-.03);
  }
  if(id==='apartamento'){
    rug(g,0,.30,4.4,3.35,'purple');bookcase(g,-4.7,-4.75,1.20,3.05);
