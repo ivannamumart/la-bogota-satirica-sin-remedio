@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {block,cylinder,sphere,cone,paint,solid,pathStroke,PALETTE} from './art';
+import {block,cylinder,sphere,cone,torus,paint,solid,pathStroke,PALETTE} from './art';
 export type PersonaStyle='escobar'|'fina'|'diego'|'federico'|'inga'|'focion'|'monseñor'|'poeta'|'urbano'|'beatriz'|'leonor'|'alicia'|'policia'|'npc';
 export interface Person {root:T.Group;head:T.Group;leftArm:T.Group;rightArm:T.Group;leftLeg:T.Group;rightLeg:T.Group;style:PersonaStyle;update:(t:number,moving?:boolean,express?:number)=>void}
 const haircolor=solid(0x302d2d),eye=solid(0x343333),white=paint('plaster'),dark=paint('charcoal');
