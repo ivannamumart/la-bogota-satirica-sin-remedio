@@ -27,8 +27,8 @@ function mountain(x:number,z:number){
  const orient=smooth(4.25,7.3,x);
  const radius=Math.hypot(x,z),falloff=1-smooth(9.45,10.2,radius);
  const ridge=2.05+.57*Math.sin(z*.63+.38)+.22*Math.sin(z*1.57+1.22);
- const mon=2.45*Math.exp(-((z+2.18)/1.10)**2);
- const gua=1.72*Math.exp(-((z-1.52)/1.18)**2);
+ const mon=2.45*Math.exp(-(((z+2.18)/1.10)**2));
+ const gua=1.72*Math.exp(-(((z-1.52)/1.18)**2));
  return Math.max(0,(ridge+mon+gua+.12*Math.sin(z*3.3+x*.55)**2)*orient*falloff);
 }
 export function terrainY(x:number,z:number){
