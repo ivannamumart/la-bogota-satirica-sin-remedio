@@ -4,7 +4,7 @@
 import * as T from 'three';
 import {paint,block,cylinder,sphere,pathStroke,sign,solid,seeded,cone,torus} from './art';
 import {type PlaceId} from '../data/layout';
-const I=paint('charcoal',0x29302f),BR=paint('brick',0x9e5d46),CREAM=paint('plaster',0xf1e8d7),DARK=paint('charcoal',0x313b40),BLUE=paint('bluegray',0x677c80),WINDOW=paint('slate',0x7f9a9d),STONE=paint('stone',0xd9ccb5),TILE=paint('terracotta',0x934e3c),WOOD=paint('wood',0x846046),GOLD=paint('gold',0xbb9358);
+const I=paint('charcoal',0x555c5b),BR=paint('brick',0xd0a186),CREAM=paint('plaster',0xf8f5e7),DARK=paint('charcoal',0x48565e),BLUE=paint('bluegray',0xafc1c6),WINDOW=paint('slate',0xb1cad1),STONE=paint('stone',0xe4dfd3),TILE=paint('terracotta',0xb9836c),WOOD=paint('wood',0xb5a08d),GOLD=paint('gold',0xf6dab1);
 function cub(g:T.Group,w:number,h:number,d:number,m:T.Material,x=0,y=h/2,z=0){return block(g,w,h,d,m,x,y,z)}
 function line(g:T.Group,p:T.Vector3[],col=0x363e3b,r=.015){return pathStroke(g,p,col,r,.8)}
 function beam(g:T.Group,x1:number,y1:number,z1:number,x2:number,y2:number,z2:number,rad=.025,mat:T.Material=WOOD){const a=new T.Vector3(x1,y1,z1),b=new T.Vector3(x2,y2,z2);const axis=b.clone().sub(a);const q=new T.Mesh(new T.CylinderGeometry(rad,rad,axis.length(),8),mat);q.position.copy(a.add(b).multiplyScalar(.5));q.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),axis.normalize());g.add(q);return q;}
@@ -14,6 +14,14 @@ function roof(g:T.Group,w:number,d:number,h:number,kind:'tile'|'slate'|'flat'|'m
  const geo=new T.BufferGeometry();const x=w/2+.20,k=d/2+.17;const peak=kind==='mansard'?.72:.52;
  const v=[-x,h,-k,0,h+peak,-k,x,h,-k,-x,h,k,0,h+peak,k,x,h,k];geo.setAttribute('position',new T.Float32BufferAttribute(v,3));geo.setIndex([0,3,1,1,3,4,1,4,2,2,4,5]);geo.computeVertexNormals();const mesh=new T.Mesh(geo,new T.MeshStandardMaterial({map:(m as T.MeshStandardMaterial).map,color:0xffffff,side:T.DoubleSide,roughness:1}));mesh.receiveShadow=true;g.add(mesh);
  for(let j=0;j<6;j++){const z0=-k+j*(d+.34)/5;beam(g,-x,h,z0,0,h+peak,z0,.009,STONE);beam(g,0,h+peak,z0,x,h,z0,.009,STONE)}
+ // Gable ends: the roof reads as a building, not two floating sheets.
+ for(const end of [-1,1]){
+  const face=new T.Shape();face.moveTo(-x,h);face.lineTo(0,h+peak);face.lineTo(x,h);face.closePath();
+  const tri=new T.Mesh(new T.ShapeGeometry(face),kind==='slate'?STONE:CREAM);
+  tri.position.z=end*(k-.04);if(end<0)tri.rotation.y=Math.PI;g.add(tri);
+  beam(g,-x,h,end*k,0,h+peak,end*k,.024,TILE);beam(g,0,h+peak,end*k,x,h,end*k,.024,TILE);
+ }
+ beam(g,0,h+peak,-k,0,h+peak,k,.022,STONE);
 }
 function window(g:T.Group,x:number,y:number,z:number,w=.48,h=.60,arch=false,bar=true){
  cub(g,w+.12,h+.12,.075,STONE,x,y,z+.011);
@@ -33,14 +41,113 @@ function doorway(g:T.Group,z:number,w=.80,h=1.38,blue=false){
  cub(g,w+.49,.13,.48,STONE,0,.065,z+.28);cub(g,w+.22,.095,.24,STONE,0,.155,z+.43);
 }
 function lamp(g:T.Group,x:number,z:number,h=2.8){cylinder(g,.035,h,paint('charcoal'),x,h/2,z,9);beam(g,x,h,z,x+.33,h+.10,z,.028,I);sphere(g,.15,paint('gold',0xe9d6a6),x+.36,h+.05,z,1)}
-export function tree(kind:'urban'|'garden'|'cerro'='urban',height=1.7){const g=new T.Group();const trunk=paint('cedar',0x756449),leaf=kind==='cerro'?paint('olive',0x4a7255):paint('olive',0x6d8769);
- const h=height;cylinder(g,.075*h/1.8,h*.62,trunk,0,h*.31,0,8,.05*h/1.8);
- for(const [x,y,z,r] of [[0,.85,0,.28],[.25,.76,.08,.23],[-.23,.73,0,.25],[.05,.95,-.18,.27],[.02,.64,.23,.20]]){const v=sphere(g,r*h/1.8,leaf,x*h/1.8,y*h/1.8,z*h/1.8,2);v.scale.set(1.08,.80,.96)}return g;}
+export function tree(kind:'urban'|'garden'|'cerro'='urban',height=1.7){
+ // Copas irregulares de follaje andino: sin geometrías de pino ni bolas repetidas.
+ const g=new T.Group();const h=height,stem=paint('cedar',0xa48a74);
+ const shades=kind==='cerro'?[0x879b87,0x73947d,0x9fae94]:kind==='garden'?[0x9caf90,0xb1b99a,0x8ea989]:[0x99ac93,0xa7b69a,0x879d8d];
+ cylinder(g,.051*h,h*.61,stem,0,h*.30,0,8,.029*h);
+ for(const [x,y,z,r] of [[-.26,.67,.02,.28],[.21,.76,.11,.28],[0,.93,-.05,.34],[-.02,.76,-.23,.31],[.23,1.02,-.06,.24]]){
+   const leaf=paint('olive',shades[Math.round(Math.abs(x*17+y*31))%shades.length]);
+   const v=sphere(g,r*h*.60,leaf,x*h*.50,y*h*.78,z*h*.54,2);
+   v.scale.set(1.10,.82,.99);
+ }
+ for(const side of [-1,1])beam(g,0,h*.40,0,side*h*.12,h*.59,0,.023,stem);
+ return g;
+}
 function trees(g:T.Group,pts:[number,number,number][],kind:'urban'|'garden'|'cerro'='urban'){pts.forEach(([x,z,s])=>{const t=tree(kind,s);t.position.set(x,0,z);g.add(t)})}
+/** Una pequeña isla paisajística imperfecta; evita los volúmenes que parecen pegados al globo. */
+let shadeTexture:T.CanvasTexture|null=null;
+function contactShadow(g:T.Group,w:number,d:number){
+ if(!shadeTexture){
+   const c=document.createElement('canvas');c.width=c.height=128;
+   const cx=c.getContext('2d')!;
+   const grd=cx.createRadialGradient(64,64,10,64,64,63);
+   grd.addColorStop(0,'rgba(39,45,35,.30)');grd.addColorStop(.54,'rgba(47,53,39,.15)');grd.addColorStop(1,'rgba(47,53,39,0)');
+   cx.fillStyle=grd;cx.fillRect(0,0,128,128);
+   shadeTexture=new T.CanvasTexture(c);
+ }
+ const mesh=new T.Mesh(new T.PlaneGeometry(w,d),new T.MeshBasicMaterial({map:shadeTexture,transparent:true,depthWrite:false,opacity:.85,side:T.DoubleSide}));
+ mesh.rotation.x=-Math.PI/2;mesh.position.y=.036;mesh.renderOrder=3;g.add(mesh);
+}
+function gardenBase(g:T.Group,r:number,kind:'garden'|'stone'|'night'|'quiet'='garden'){
+ // A halo of terrain rather than a separate platform; preserves negative space.
+ r *= .84;
+ const segments=56, rings=7, positions:number[]=[],colors:number[]=[],faces:number[]=[];
+ const core=new T.Color(kind==='stone'?0xc2b9a6:kind==='night'?0xaaa9a1:kind==='quiet'?0xa5b0a0:0xabbba3);
+ const edge=new T.Color(0xa5b49b);
+ for(let j=0;j<=rings;j++)for(let i=0;i<=segments;i++){
+   const a=Math.PI*2*i/segments,q=j/rings,rr=r*q*(1+.023*Math.sin(a*5)+.012*Math.cos(a*9));
+   const x=rr*Math.cos(a),z=rr*.80*Math.sin(a);
+   positions.push(x,-.022-.030*q*q,z);
+   const col=core.clone().lerp(edge,q*.72);colors.push(col.r,col.g,col.b);
+   if(j<rings&&i<segments){const k=j*(segments+1)+i;faces.push(k,k+segments+1,k+1,k+1,k+segments+1,k+segments+2)}
+ }
+ const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.setIndex(faces);geometry.computeVertexNormals();
+ const mesh=new T.Mesh(geometry,new T.MeshStandardMaterial({vertexColors:true,roughness:1,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}));mesh.receiveShadow=true;g.add(mesh);
+ contactShadow(g,r*1.50,r*1.17);
+}
+function brickCourses(g:T.Group,w:number,h:number,front:number){
+ // Hiladas de ladrillo dibujadas discretamente: escala histórica, no textura de videojuego.
+ for(let row=0;row<15;row++){
+   const y=.28+row*(h-.52)/15;
+   if(y>h-.15)continue;
+   beam(g,-w/2+.08,y,front+.020,w/2-.08,y,front+.020,.006,paint('stone',0xccae91));
+ }
+}
+function balcony(g:T.Group,x:number,y:number,z:number,w=.78){
+ cub(g,w,.06,.35,STONE,x,y,z+.17);
+ for(const sx of [-1,1])beam(g,x+sx*w*.46,y,z+.34,x+sx*w*.46,y+.37,z+.34,.016,I);
+ beam(g,x-w*.46,y+.37,z+.34,x+w*.46,y+.37,z+.34,.017,I);
+ for(let j=-2;j<=2;j++)beam(g,x+j*w*.20,y+.05,z+.34,x+j*w*.20,y+.35,z+.34,.010,I);
+}
+/** Jardineras de andén con textura y volumen suave: pocas unidades deliberadas. */
+function planter(g:T.Group,x:number,z:number,width=.54){
+ const earth=paint('olive',0x879779),terracotta=paint('terracotta',0xac7d68);
+ cub(g,width,.24,.32,terracotta,x,.13,z);
+ cub(g,width-.06,.05,.29,earth,x,.27,z);
+ for(let i=0;i<3;i++){
+   const leaf=sphere(g,.11,paint('olive',i%2?0x829a83:0x9aad90),x+(i-1)*width*.28,.39+(i%2)*.06,z,1);
+   leaf.scale.set(1.23,.84,.88);
+ }
+}
+function awning(g:T.Group,w:number,z:number,y:number,accent:T.Material){
+ cub(g,w,.07,.63,accent,0,y,z+.22);
+ for(let i=0;i<9;i++)cub(g,w/9,.075,.65,i%2?CREAM:accent,(i-4)*(w/9),y+.014,z+.22);
+ for(const sx of [-1,1])beam(g,sx*w*.46,y-.01,z+.18,sx*w*.46,y-.35,z+.02,.018,STONE);
+}
+/** Elevación lateral real: las fachadas no pueden ser caras mudas del cubo. */
+function sideElevation(g:T.Group,x:number,d:number,h:number,style:'brick'|'stucco'|'mansion'|'workshop'|'modern'='brick'){
+ const side=new T.Group();
+ // Plane of the window faces local +Z and is turned toward the exterior +X / -X.
+ side.rotation.y=x>0?Math.PI/2:-Math.PI/2;
+ side.position.x=x;
+ g.add(side);
+ const len=d*.92,levels=h>3.4?[.86,1.64,2.44,3.21]:h>2.8?[.9,1.84,2.62]:[.84,1.81];
+ for(const level of levels){if(level>h-.20)continue;
+  for(const offset of len>2.4?[-.65,0,.65]:[-.44,.44]){
+    window(side,offset,level,.085,style==='modern'?.38:.36,style==='modern'?.43:.48,style==='mansion',style==='brick');
+  }
+ }
+ // Basamento, juntas y cornisa continúan por los costados.
+ cub(side,len,.17,.16,STONE,0,.115,.10);
+ cub(side,len+.12,.12,.17,style==='mansion'?STONE:CREAM,0,h-.11,.12);
+ for(let k=0;k<3;k++)cub(side,.025,h*.58,.045,paint('stone',0xcbbca8),-len*.34+k*len*.34,h*.50,.133);
+}
+function sideNightFacade(g:T.Group,x:number,d:number,h:number){
+ const group=new T.Group();group.rotation.y=x>0?Math.PI/2:-Math.PI/2;group.position.x=x;g.add(group);
+ for(const z of [-.65,.65]){
+   const frame=paint('charcoal',0x444b4b);
+   cub(group,.64,1.20,.070,frame,z,1.63,.08);
+   cub(group,.51,1.07,.080,paint('purple',0x9c8497),z,1.63,.13);
+   cub(group,.022,1.11,.09,GOLD,z,1.63,.18);
+ }
+ for(const y of [.28,2.74])cub(group,d+.10,.12,.18,paint('olive',0x8c9a86),0,y,.10);
+}
 function residence(g:T.Group,w:number,d:number,h:number,kind:'brick'|'stucco'|'mansion'|'workshop'='brick'){
  const wall=kind==='stucco'?CREAM:kind==='mansion'?paint('stone',0xcbb29b):kind==='workshop'?paint('ochre',0xae8266):BR;
  const z=d/2-.04;
  cub(g,w,h,d,wall,0,h/2,0);
+ if(kind==='brick'||kind==='workshop')brickCourses(g,w,h,z+.05);
  // Zócalo, pilastras, molduras y cornisa con relieve real
  cub(g,w+.04,.30,d+.06,STONE,0,.15,0);
  for(let y of [h*.48,h-.11])cub(g,w+.13,.105,d+.12,kind==='mansion'?STONE:CREAM,0,y,0);
@@ -49,11 +156,18 @@ function residence(g:T.Group,w:number,d:number,h:number,kind:'brick'|'stucco'|'m
  for(const floor of [0,1])for(let i=0;i<3;i++){const x=(i-1)*w*.287;if(floor===0&&i===1)continue;
    window(g,x,floor?2.13:1.0,z,.48,.56,kind==='mansion',true);
    if(floor===1&&kind!=='workshop'){
-     cub(g,.67,.045,.30,STONE,x,1.81,z+.18);
-     for(let j=-2;j<=2;j++)beam(g,x+j*.12,1.82,z+.30,x+j*.12,2.09,z+.30,.011,I);
+     balcony(g,x,1.78,z+.07,.68);
    }
  }
+ // Contrafachada construida: el globo gira y todos los lados deben ser legibles.
+ const back=new T.Group();back.rotation.y=Math.PI;g.add(back);
+ for(const yy of [1.03,2.14])for(const xx of [-w*.29,0,w*.29]){
+   window(back,xx,yy,d/2-.055,.42,.54,kind==='mansion',false);
+ }
+ for(const xx of [-w*.46,w*.46])cub(back,.10,h,.14,STONE,xx,h/2,d/2-.025);
+ sideElevation(g,-w/2,d,h,kind);sideElevation(g,w/2,d,h,kind);
  roof(g,w,d,h,kind==='mansion'?'mansard':'tile');
+ for(let k=0;k<6;k++){const yy=.30+k*.45;if(yy<h-.2)beam(g,-w*.46,yy,-d*.49,w*.46,yy,-d*.49,.007,paint('stone',0xb4aca3))}
  // Costados con ventanería reconocible en vistas de cámara oblicua
  for(const x of [-w/2-.01,w/2+.01])for(const y of [1.16,2.14]){
    const m=cub(g,.015,.49,.49,DARK,x,y,-.34);
@@ -74,6 +188,7 @@ function church(g:T.Group){const w=3.55,d=3.18,z=d/2+.03;
  torus(g,.43,.066,GOLD,0,3.23,z+.25);const glass=sphere(g,.40,paint('bluegray',0x6690a1),0,3.23,z+.28,2);glass.scale.z=.12;
  for(let i=0;i<10;i++){const a=i*Math.PI/5;beam(g,0,3.23,z+.41,Math.cos(a)*.39,3.23+Math.sin(a)*.39,z+.42,.020,GOLD)}
  for(let i=0;i<6;i++)cub(g,2.70-i*.20,.09,.33,STONE,0,.03+i*.10,z+.55+i*.28);
+ for(const sx of [-1,1]){const p=block(g,.16,2.36,.28,CREAM,sx*2.0,1.2,1.25);p.rotation.z=sx*.045;}
  trees(g,[[-2.45,1.45,1.8],[2.4,1.4,1.8]],'garden');
 }
 function neoclassical(g:T.Group){residence(g,3.8,2.3,3.02,'mansion');const z=1.27;
@@ -81,9 +196,14 @@ function neoclassical(g:T.Group){residence(g,3.8,2.3,3.02,'mansion');const z=1.2
  for(let i=-2;i<=2;i++){const x=i*.74;cylinder(g,.115,1.80,STONE,x,1.06,z,16);cub(g,.27,.12,.30,CREAM,x,1.99,z);cub(g,.27,.10,.32,STONE,x,.16,z)}
  cub(g,4.07,.17,.48,STONE,0,2.10,z);
  const sh=new T.Shape();sh.moveTo(-2.02,0);sh.lineTo(0,.78);sh.lineTo(2.02,0);sh.closePath();const mesh=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.23,bevelEnabled:true,bevelSize:.015,bevelThickness:.015,bevelSegments:1}),STONE);mesh.position.set(0,3.02,1.20);g.add(mesh);
- trees(g,[[-2.4,1.1,1.4],[2.4,1.0,1.4]],'garden');
+ for(let k=0;k<5;k++)cub(g,3.50-k*.14,.10,.33,STONE,0,.055+k*.095,1.48+k*.28);
+ for(let j=0;j<4;j++){const c=cylinder(g,.045,.22,paint('gold',0xc8ae8c),-.96+j*.64,2.12,1.52,10);c.scale.z=.8;}
+ trees(g,[[-2.7,1.45,1.24],[2.7,1.50,1.29]],'garden');
 }
 function modern(g:T.Group,w=2.5,h=4.35){cub(g,w,h,2.00,STONE,0,h/2);for(let y=.62;y<h-.45;y+=.67){for(let x=-w*.33;x<=w*.36;x+=.57){window(g,x,y,1.05,.44,.43,false,false)}}
+ const rear=new T.Group();rear.rotation.y=Math.PI;g.add(rear);
+ for(let y=.65;y<h-.36;y+=.69)for(let x=-w*.29;x<=w*.30;x+=.62)window(rear,x,y,1.05,.39,.41,false,false);
+ sideElevation(g,-w/2,2.00,h,'modern');sideElevation(g,w/2,2.00,h,'modern');
  cub(g,w+.2,.18,2.18,CREAM,0,h+.04);doorway(g,1.05,.72,1.38,true);
  cub(g,2.00,.35,.49,STONE,0,1.37,1.26);
 }
@@ -91,18 +211,32 @@ function nightclub(g:T.Group){const front=1.41;
  cub(g,4.25,2.86,2.82,paint('bluegray',0x68717d),0,1.43);
  cub(g,4.38,.23,2.94,paint('purple',0x826a84),0,2.81);
  for(let x of [-1.41,-.75,.75,1.41]){window(g,x,1.60,front,.53,.79,false,false)}
+ const back=new T.Group();back.rotation.y=Math.PI;g.add(back);
+ for(const x of [-1.40,-.50,.50,1.40])window(back,x,1.51,front,.47,.65,false,false);
+ sideNightFacade(g,-4.25/2,2.82,2.86);sideNightFacade(g,4.25/2,2.82,2.86);
  doorway(g,front,.92,1.55);cub(g,3.4,.20,.70,paint('purple',0xc18b9d),0,2.18,front+.38);
  for(let i=0;i<6;i++){cub(g,.31,.28,.08,paint(i%2?'olive':'purple',i%2?0xb9c98a:0xb968a4),-1.22+i*.48,2.23,front+.46)}
  sign(g,'EL UNICORNIO',3.25,.56,0,3.09,front+.22,'#282d33','#e6bdd1');
  cub(g,4.50,.12,.52,paint('olive',0xb0c78f),0,3.08,front+.15);
  for(let x of [-2.2,2.2]){lamp(g,x,1.72,2.85)}
+ for(let i=0;i<5;i++){const sx=-1.65+i*.82;const bulb=sphere(g,.085,paint('gold',0xffdfbc,{emissive:0xffad83}),sx,2.85,front+.68,1);bulb.scale.y=.78;}
+ awning(g,3.55,front+.08,2.1,paint('purple',0xd1a7c2));
  trees(g,[[-2.7,-.7,1.25],[2.8,-.65,1.2]],'garden');
 }
 function bar(g:T.Group){const z=1.35;cub(g,3.35,2.50,2.62,paint('ochre',0x947960),0,1.25);
  for(let i=0;i<4;i++){window(g,-1.2+i*.8,1.41,z,.48,.7,false,false)}
+ // El Oasis también tiene fachada trasera; la rotación libre no muestra paredes vacías.
+ const rear=new T.Group();rear.rotation.y=Math.PI;g.add(rear);
+ for(let i=0;i<4;i++)window(rear,-1.2+i*.8,1.43,z,.44,.61,false,true);
+ for(const sx of [-1,1])cub(rear,.11,2.30,.15,STONE,sx*1.57,1.15,z+.05);
+
+ sideElevation(g,-3.35/2,2.62,2.50,'workshop');sideElevation(g,3.35/2,2.62,2.50,'workshop');
  doorway(g,z,.82,1.40);cub(g,3.55,.14,.66,TILE,0,1.94,z+.21);sign(g,'MUSIC BAR · EL OASIS',3.03,.35,0,2.30,z+.12,'#eedab4','#4c5c4f');
  cub(g,3.3,.09,.42,CREAM,0,.24,z+.42);
- const t=tree('urban',1.66);t.position.set(2.35,0,.3);g.add(t);
+ for(let i=0;i<3;i++)cub(g,.04,.23,.20,WOOD,-1.04+i*1.04,.34,z+.52);
+ awning(g,2.55,z,1.92,paint('terracotta',0xad7e6d));
+ for(const sx of [-1,1]){const globe=sphere(g,.12,paint('gold',0xf1d1a4),sx*1.45,1.88,z+.35,2);globe.scale.y=.8;}
+ const t=tree('urban',1.46);t.position.set(2.35,0,.3);g.add(t);
 }
 function studio(g:T.Group){residence(g,3.45,2.77,2.90,'workshop');const z=1.42;
  const sky=cub(g,2.5,.06,1.22,paint('bluegray',0x95b4b8),0,3.24,-.35);sky.rotation.x=-.42;
@@ -123,17 +257,18 @@ function street(g:T.Group){const q1=new T.Group();q1.position.set(-1.37,0,-.60);
 }
 export function buildLandmark(id:PlaceId):T.Group{const g=new T.Group();g.name='edificio_'+id;
  switch(id){
-  case'apartamento':residence(g,3.40,2.35,2.97,'brick');trees(g,[[-2.2,1.0,1.3],[2.3,1.1,1.4]],'urban');cub(g,3.7,.07,.60,STONE,0,.045,1.46);break;
-  case'casa_familiar':residence(g,4.33,3.42,3.25,'mansion');trees(g,[[-2.8,1.9,1.9],[2.87,1.8,1.75]],'garden');for(let i=0;i<4;i++)cub(g,3.9-i*.25,.07,.31,STONE,0,.06+i*.07,2.02+i*.26);break;
-  case'taller':studio(g);break;
-  case'oasis':bar(g);break;
-  case'unicornio':nightclub(g);break;
-  case'jockey':neoclassical(g);break;
-  case'porciuncula':church(g);break;
-  case'parque':park(g);break;
-  case'oficina':modern(g,2.60,3.95);break;
-  case'cementerio':cemetery(g);break;
-  case'septima':street(g);break;
+  case'apartamento':gardenBase(g,2.42,'quiet');residence(g,3.40,2.35,2.97,'brick');planter(g,1.08,1.67,.62);trees(g,[[-2.2,1.0,1.18],[2.3,1.1,1.31]],'urban');cub(g,3.7,.07,.60,STONE,0,.045,1.46);
+    for(let k=-2;k<=2;k++){const tile=cub(g,.48,.024,.35,paint('stone',k%2?0xdbd0bf:0xe4dbcc),k*.49,.038,1.80);tile.rotation.y=k*.028}break;
+  case'casa_familiar':gardenBase(g,3.05,'stone');residence(g,4.33,3.42,3.25,'mansion');planter(g,1.49,1.97,.71);trees(g,[[-2.8,1.9,1.9],[2.87,1.8,1.75]],'garden');for(let i=0;i<4;i++)cub(g,3.9-i*.25,.07,.31,STONE,0,.06+i*.07,2.02+i*.26);break;
+  case'taller':gardenBase(g,2.30,'quiet');studio(g);planter(g,1.65,1.73,.60);break;
+  case'oasis':gardenBase(g,2.52,'quiet');bar(g);break;
+  case'unicornio':gardenBase(g,3.05,'night');nightclub(g);break;
+  case'jockey':gardenBase(g,2.80,'stone');neoclassical(g);planter(g,-2.0,1.87,.72);break;
+  case'porciuncula':gardenBase(g,3.05,'stone');church(g);break;
+  case'parque':gardenBase(g,2.52,'garden');park(g);break;
+  case'oficina':gardenBase(g,2.07,'stone');modern(g,2.60,3.95);break;
+  case'cementerio':gardenBase(g,2.00,'quiet');cemetery(g);break;
+  case'septima':gardenBase(g,2.30,'stone');street(g);break;
   case'cerros':break;
  }
  return g;
@@ -148,7 +283,7 @@ export function decorativeLandmark(id:string){const g=new T.Group();g.name='hito
    const p=cub(g,.19,.34,.058,DARK,x,.44,z);p.rotation.y=-a;
    cylinder(g,.038,.27,STONE,Math.cos(a)*1.42,.17,Math.sin(a)*1.42,6);
   }
-  torus(g,1.36,.07,STONE,0,1.24,0,'x');
+  torus(g,1.36,.07,STONE,0,1.24,0,'y');
  }else if(id==='torres_parque'){
   for(let j=0;j<3;j++){
    const h=[3.9,4.9,3.4][j],x=[-1.05,.15,1.20][j];

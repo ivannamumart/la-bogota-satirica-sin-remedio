@@ -1,7 +1,7 @@
 name: Compilación y prueba WebGL real
 on:
   push:
-    branches: [main, redisenio-cinematografico-v2, v04-review]
+    branches: [main, redisenio-cinematografico-v2, v04-review, v05-direccion-de-arte]
   pull_request:
     branches: [main]
 jobs:
