@@ -86,7 +86,7 @@ export const DIALOGOS:Record<string,Escena>={
  ]},
  porciuncula:{inicio:[
   A('Una campana anuncia la misa. Las escaleras del atrio todavía están húmedas.','P-5506 / P-5507'),
-  C('Madre','A de doce, me figuro, a la Porciúncula.','P-5506'),
+  A('La tía Clema cree que Foción fue a la misa de doce, en la Porciúncula.','P-5506'),
   A('Escobar cuelga el teléfono y descubre que llegará tarde. Es día de elecciones y no encuentra taxis.','P-5507'),
   A('La ciudad parece haber dispuesto todas sus distancias contra él.','P-5507')
  ],bifurcaciones:[
