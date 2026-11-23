@@ -13,8 +13,8 @@ import './ui/styles.css';
 const el=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const mount=el('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about'),roadHint=el('road-hint');
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(37,window.innerWidth/window.innerHeight,.10,260);
-const targetOverview=new T.Vector3(0,5.6,0);
-camera.position.set(0,22.2,42);camera.lookAt(targetOverview);
+const targetOverview=new T.Vector3(0,4.5,0);
+camera.position.set(0,36,46);camera.lookAt(targetOverview);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.35));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=false;mount.appendChild(renderer.domElement);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.copy(targetOverview);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=25;orbit.maxDistance=64;orbit.maxPolarAngle=Math.PI*.67;orbit.minPolarAngle=.11;orbit.rotateSpeed=.46;orbit.autoRotate=true;orbit.autoRotateSpeed=.20;
@@ -114,8 +114,8 @@ function updateInterior(dt:number,t:number,wallDt:number){if(!stage||!currentSit
 }
 function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();return}
  if(mode==='walk'){
-  const desired=lastHeroPos.clone().addScaledVector(lastHeroDir,-4.7).add(new T.Vector3(0,3.5,0));
-  const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,1.15).add(new T.Vector3(0,.90,0));
+  const desired=lastHeroPos.clone().addScaledVector(lastHeroDir,-3.8).add(new T.Vector3(0,5.2,0));
+  const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,1.45).add(new T.Vector3(0,1.05,0));
   camera.position.lerp(desired,1-Math.exp(-dt*2.25));camera.up.lerp(new T.Vector3(0,1,0),1-Math.exp(-dt*3.5)).normalize();camera.lookAt(focus);
  }else if(mode==='interior'&&stage){
   const actor=stage.actors.length?stage.actors[Math.max(0,currentLine)%stage.actors.length]:null;const cinematic=phase==='canonical'||phase==='branch';
@@ -124,8 +124,8 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
   camera.position.lerp(desired,1-Math.exp(-dt*1.7));camera.up.set(0,1,0);camera.lookAt(aim)
  }
 }
-function toOverview(){if(mode==='interior'){leave();return}mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(0,22.2,42);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
-function beginWalking(){if(mode!=='overview')return;mode='walk';orbit.enabled=false;orbit.autoRotate=false;camera.position.copy(lastHeroPos).addScaledVector(lastHeroDir,-4.7).add(new T.Vector3(0,3.5,0));camera.up.set(0,1,0);camera.lookAt(lastHeroPos);caption.classList.remove('visible')}
+function toOverview(){if(mode==='interior'){leave();return}mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(0,36,46);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
+function beginWalking(){if(mode!=='overview')return;mode='walk';orbit.enabled=false;orbit.autoRotate=false;camera.position.copy(lastHeroPos).addScaledVector(lastHeroDir,-3.8).add(new T.Vector3(0,5.2,0));camera.up.set(0,1,0);camera.lookAt(lastHeroPos);caption.classList.remove('visible')}
 function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt=Math.sin(p*2*Math.PI+.45),daylight=T.MathUtils.smoothstep(alt,-.20,.65),golden=Math.pow(1-Math.abs(alt-.08),4);
  sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=.48+3.0*daylight;sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
  sky.intensity=.68+1.25*daylight;fill.intensity=.40+.54*daylight;starMat.opacity=Math.pow(1-daylight,2)*.80;
