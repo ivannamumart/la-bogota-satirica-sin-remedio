@@ -48,9 +48,11 @@ try{
  await shot(page,'05-sobre');await page.click('#about-close');await page.keyboard.press('Escape');
  await page.waitForFunction(()=>window.__BOGOTA_TEST__.getState().mode==='walk',{timeout:15000});
  await page.click('#center');await page.evaluate(()=>window.__BOGOTA_TEST__.jumpDay());await page.waitForTimeout(1100);await shot(page,'06-dia_noche');
+ // Libera el contexto WebGL de escritorio antes de abrir uno táctil en GPU software.
+ await page.close();page=null;
  const phone=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});trackErrors(phone);
  await phone.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:35000});
- await phone.waitForFunction(()=>window.__BOGOTA_TEST__?.getState()!==undefined,{timeout:25000});await phone.waitForTimeout(1300);
+ await phone.waitForFunction(()=>window.__BOGOTA_TEST__?.getState()!==undefined,{timeout:45000});await phone.waitForTimeout(1300);
  await shot(phone,'07-movil_globo');
  await phone.evaluate(()=>window.__BOGOTA_TEST__.walk());await phone.waitForTimeout(300);
  if(!await phone.locator('#mobile-pad').evaluate(e=>e.classList.contains('visible')))throw Error('Pad táctil no visible');
