@@ -64,8 +64,8 @@ export const EDGES:EdgeDef[]=[
  {from:'s5',to:'unicornio-door',kind:'sendero'},
 ];
 export const DECOR=[
- {id:'plaza_toros',x:1.9,z:3.05,label:'Plaza de Toros La Santamaría'},
- {id:'torres_parque',x:3.25,z:2.75,label:'Torres del Parque · 1970'},
+ {id:'plaza_toros',x:1.8,z:2.75,label:'Plaza de Toros La Santamaría'},
+ {id:'torres_parque',x:4.2,z:1.5,label:'Torres del Parque · 1970'},
  {id:'tequendama',x:1.85,z:4.93,label:'Centro Internacional Tequendama'},
  {id:'museo_nacional',x:-1.63,z:2.84,label:'Museo Nacional'}
 ] as const;

@@ -144,7 +144,7 @@ export function createPlanet(){
   // La capilla, el club y las viviendas tienen materialidad de región, no zócalos enormes.
   world.add(g);buildings.set(p.id,g);
  }
- for(const d of DECOR){const g=decorativeLandmark(d.id);g.position.copy(terrain(d.x,d.z,.05));g.scale.setScalar(d.id==='plaza_toros'?.84:d.id==='torres_parque'?.73:.64);world.add(g)}
+ for(const d of DECOR){const g=decorativeLandmark(d.id);g.position.copy(terrain(d.x,d.z,.05));g.scale.setScalar(d.id==='plaza_toros'?.66:d.id==='torres_parque'?.63:.64);world.add(g)}
  // Hitos de cima: Monserrate y Guadalupe, observados de lejos.
  chapel(world,7.35,-2.18,.96);chapel(world,7.72,1.65,.78);
  vegetation(world);vehicles(world);
