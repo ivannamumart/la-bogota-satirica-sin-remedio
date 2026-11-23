@@ -14,7 +14,7 @@
 <div id="world" role="application" aria-label="Mundo tridimensional navegable de La Bogotá satírica de Sin remedio"></div>
 <div id="grain" aria-hidden="true"></div>
 <header class="masthead" aria-label="Título del proyecto">
-  <div class="mast-kicker">UNA CARTOGRAFÍA ESPECULATIVA · BOGOTÁ 1972</div>
+  <div class="mast-kicker">UNA CARTOGRAFÍA ESPECULATIVA</div>
   <h1>LA BOGOTÁ SATÍRICA DE <em>SIN REMEDIO</em></h1>
 </header>
 <nav class="controls" aria-label="Controles del visualizador">
@@ -33,12 +33,21 @@
   <div class="source" id="source"></div>
 </div>
 <div id="decisions" class="decisions" aria-hidden="true">
-  <p class="decision-eyebrow">LA HISTORIA PUEDE CAMBIAR</p>
-  <h2>¿Qué hará Ignacio?</h2>
+  <p class="decision-eyebrow">OTRAS POSIBILIDADES DE LA ESCENA</p>
+  <h2>¿Hacia dónde sigue esta historia?</h2>
   <div id="choices" class="choice-grid"></div>
 </div>
 <div id="scene-hint" class="scene-hint" aria-live="polite"></div>
 <div id="road-hint" class="road-hint" aria-live="polite"></div>
+<div id="mobile-overview-hint" class="mobile-overview-hint">Toca dos veces el mundo para recorrerlo</div>
+<div id="mobile-pad" class="mobile-pad" aria-label="Controles táctiles de movimiento">
+ <button type="button" data-key="a" aria-label="Girar a la izquierda">←</button>
+ <div class="mobile-pad-vertical">
+  <button type="button" data-key="w" aria-label="Avanzar o siguiente diálogo">↑</button>
+  <button type="button" data-key="s" aria-label="Retroceder o diálogo anterior">↓</button>
+ </div>
+ <button type="button" data-key="d" aria-label="Girar a la derecha">→</button>
+</div>
 <div id="fade" class="fade" aria-hidden="true"></div>
 <section id="about" class="about" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="about-title">
   <button id="about-close" class="about-close" type="button" aria-label="Cerrar y regresar al mundo">× <span>VOLVER AL MUNDO</span></button>

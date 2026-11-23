@@ -75,6 +75,25 @@ export function character(style:PersonaStyle='npc',scale=1):Person{
  }
  if(style==='alicia'){sphere(body,.073,paint('bluegray',0x679ab5),.20,1.13,.25,1)}
  if(style==='escobar'){
+   // Melena setentera de largo medio: sienes, nuca y mechones asimétricos.
+   // El cabello se ve también desde atrás, la vista habitual de tercera persona.
+   for(const side of [-1,1]){
+    const temple=sphere(head,.125,haircolor,side*.174,.028,-.032,2);
+    temple.scale.set(.61,1.43,.91);temple.rotation.z=side*.15;
+    const curl=sphere(head,.093,haircolor,side*.168,-.19,-.065,2);
+    curl.scale.set(.75,1.33,1.05);
+   }
+   for(let j=0;j<7;j++){
+    const x=-.168+j*.056;
+    const mul=1-.20*Math.abs(j-3);
+    const curl=sphere(head,.103*mul,haircolor,x,-.122,-.169,2);
+    curl.scale.set(.68,1.7,.78);curl.rotation.z=.11*Math.sin(j*1.9);
+   }
+   for(let j=0;j<4;j++){
+    const x=-.125+j*.082;
+    const fringe=sphere(head,.086,haircolor,x,.238,.158,2);
+    fringe.scale.set(.9,.54,1.02);fringe.rotation.z=.14*Math.sin(j*2);
+   }
    const moustache=paint('charcoal',0x655950);
    const left=sphere(head,.068,moustache,-.060,-.040,.202,1);left.scale.set(1,.29,.37);left.rotation.z=-.14;
    const right=sphere(head,.068,moustache,.060,-.040,.202,1);right.scale.set(1,.29,.37);right.rotation.z=.14;

@@ -8,7 +8,8 @@ import {createPlanet,interpolateTrack,SITES,R,type Site,type Track} from './worl
 import {NODES,type PlaceId} from './data/layout';
 import {character,type Person} from './world/people';
 import {makeStage,type Stage} from './world/scenes';
-import {DIALOGOS,type Linea} from './story/dialogues';
+import {DIALOGOS,CONTEXTOS} from './story/expanded';
+import type {Linea} from './story/dialogues';
 import './ui/styles.css';
 const el=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const mount=el('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about'),roadHint=el('road-hint');
@@ -84,17 +85,32 @@ function walkingShot(){
 const hero=character('escobar',.76);world.add(hero.root);
 // Sombra natural bajo los pies, sin marcadores de interfaz sobre el protagonista.
 const footShade=new T.Mesh(new T.CircleGeometry(.34,24),new T.MeshBasicMaterial({color:0x314135,transparent:true,opacity:.20,depthWrite:false,side:T.DoubleSide}));
-footShade.rotation.x=-Math.PI/2;footShade.position.y=-.065;hero.root.add(footShade);
+footShade.rotation.x=-Math.PI/2;footShade.position.y=.040;hero.root.add(footShade);
 type Mode='overview'|'walk'|'interior'|'transition';type Phase='arrival'|'canonical'|'choice'|'branch'|'complete';
 let mode:Mode='overview',phase:Phase='arrival',stage:Stage|null=null,currentSite:Site|null=null,lock=false,paused=false;
 let track:Track=routes.find(r=>NODES[r.from].id==='s1'&&NODES[r.to].id==='s2')??routes[0],distance=1.6,direction:1|-1=1;
 let selection=0,choiceIndex=-1,stageTime=0,currentLine=-1,timeOfDay=55,ignoreEntryUntil=0;
 let lastHeroPos=new T.Vector3(),lastHeroDir=new T.Vector3(0,0,1);
+const travelHistory:{route:number;heading:1|-1}[]=[];
+let lateral=0, lateralTarget=0,walkVelocity=0,heroAngle=0,captionTimeout=0,dialogueIndex=-1;
+let activeBubbleActor:T.Object3D|null=null;
+let lastSceneInput=0;
 const keys=new Set<string>(),mobile={forward:0,turn:0},originalActorPos=new WeakMap<Person,T.Vector3>(),originalActorRot=new WeakMap<Person,number>();
 const getKey=(...keys0:string[])=>keys0.some(k=>keys.has(k));
 const classToggle=(node:HTMLElement,name:string,on:boolean)=>node.classList.toggle(name,on);
 const routeAt=(track:Track,d:number,dir:1|-1)=>{const s=interpolateTrack(track,d);const f=s.tangent.multiplyScalar(dir).setY(0).normalize();return {pos:s.pos,forward:f}};
-function positionHero(){const s=routeAt(track,distance,direction);hero.root.position.copy(s.pos).add(new T.Vector3(0,.09,0));hero.root.rotation.set(0,Math.atan2(s.forward.x,s.forward.z),0);lastHeroPos.copy(hero.root.position);lastHeroDir.copy(s.forward)}
+function positionHero(dt=.016,motionSign=1){
+ const s=routeAt(track,distance,direction);const sideways=new T.Vector3(-s.forward.z,0,s.forward.x);
+ // Escobar camina por un lateral de la calzada, sin atravesar la fila de autobuses.
+ const sideWalk=track.kind==='septima'||track.kind==='veintiseis'?.47:track.kind==='barrio'?.29:.055;
+ lateral=T.MathUtils.damp(lateral,sideWalk+lateralTarget,8,dt);
+ const base=s.pos.addScaledVector(sideways,lateral);base.y=interpolateTrack(track,distance).pos.y-.012;
+ hero.root.position.copy(base);
+ const facing=s.forward.clone().multiplyScalar(motionSign||1);
+ const angle=Math.atan2(facing.x,facing.z);
+ const angleDelta=Math.atan2(Math.sin(angle-heroAngle),Math.cos(angle-heroAngle));heroAngle+=angleDelta*Math.min(1,dt*9);
+ hero.root.rotation.set(0,heroAngle,0);lastHeroPos.copy(hero.root.position);lastHeroDir.copy(facing);
+}
 positionHero();
 const outgoing=(node:number,exclude=-1)=>routes.filter(e=>(e.from===node||e.to===node)&&e.index!==exclude);
 const outward=(e:Track,node:number)=>e.from===node?e.startDir.clone():e.endDir.clone().multiplyScalar(-1);
@@ -102,68 +118,177 @@ function optionsAt(node:number,inbound:T.Vector3,previousIndex:number){return ou
   // Mantener la continuidad de marcha por defecto; las teclas A/D permiten desviarse.
   const score=(e:Track)=>inbound.clone().dot(outward(e,node));return score(b)-score(a);
 })}
-function upcoming(){return direction>0?track.to:track.from}
-function nearCrossroads(){return direction>0?track.total-distance<1.35:distance<1.35}
+function upcoming(){return walkVelocity<-.12?(direction>0?track.from:track.to):(direction>0?track.to:track.from)}
+function nearCrossroads(){return (walkVelocity<-.12)===(direction>0)?distance<1.3:track.total-distance<1.3}
 function showRoadHint(){if(mode!=='walk'||!nearCrossroads()){roadHint.classList.remove('visible');return}
  const node=upcoming(),others=optionsAt(node,lastHeroDir,track.index);if(!others.length){roadHint.classList.remove('visible');return}
  const chosen=others[selection%others.length];const target=NODES[chosen.from===node?chosen.to:chosen.from];
- roadHint.textContent=`A / D  ·  ${target.label||target.entry?.replaceAll('_',' ')||'DESVÍO'}  ·  W AVANZAR`;
+ roadHint.textContent=`A / D: ${target.label||target.entry?.replaceAll('_',' ')||'OTRO CAMINO'} · W AVANZA · S REGRESA`;
  roadHint.classList.add('visible')}
-function continueFrom(node:number,inbound:T.Vector3){const candidates=optionsAt(node,inbound,track.index);
- if(!candidates.length){direction=direction===1?-1:1;distance=direction===1?0:track.total;return}
- const chosen=candidates[selection%candidates.length];track=chosen;direction=track.from===node?1:-1;distance=direction===1?.09:track.total-.09;selection=0;
-}
-function handleWalk(dt:number,t:number){const forward=(getKey('w','arrowup')?1:0)-(getKey('s','arrowdown')?1:0)+mobile.forward;
- if(Math.abs(forward)<.12){hero.update(t,false);showRoadHint();return}
- const step=Math.sign(forward),fast=getKey('shift')?6.3:4.15;
- const next=distance+step*direction*Math.min(.16,dt*fast);distance=T.MathUtils.clamp(next,0,track.total);
- const atNode=step*direction>0?distance>=track.total-.01:distance<=.01;
- if(atNode){
-   // Retroceder con S vuelve por el mismo tramo; nunca cambia arbitrariamente de carretera.
-   // Al llegar a su extremo se detiene y W recupera la marcha hacia delante.
-   if(step<0){distance=direction===1?.004:track.total-.004;positionHero();hero.update(t,false);showRoadHint();return;}
-   const node=step*direction>0?track.to:track.from,n=NODES[node];
-   if(n.entry&&performance.now()>ignoreEntryUntil){const site=SITES.find(s=>s.id===n.entry);if(site&&site.scene){positionHero();enter(site);return}}
-   // Reverse con S; marcha hacia delante W conserva continuidad viaria.
-   const incoming=outward(track,node).multiplyScalar(-1);
-   continueFrom(node,incoming);selection=0;
+function continueFrom(node:number,inbound:T.Vector3,backwards=false){
+ let next:Track|undefined;
+ if(backwards&&travelHistory.length){
+  const previous=travelHistory[travelHistory.length-1];
+  const candidate=routes[previous.route];
+  if(candidate&&(candidate.from===node||candidate.to===node)){travelHistory.pop();next=candidate;}
  }
- positionHero();hero.update(t,true);showRoadHint();
+ const candidates=optionsAt(node,inbound,track.index);
+ if(!next)next=candidates[selection%candidates.length];
+ if(!next){ // En un extremo de la red se puede darse vuelta y volver a recorrer el camino.
+   direction=direction===1?-1:1;distance=direction===1?.045:track.total-.045;selection=0;return;
+ }
+ if(!backwards)travelHistory.push({route:track.index,heading:direction});
+ track=next;direction=track.from===node?1:-1;
+ if(backwards){direction=direction===1?-1:1;}
+ distance=direction===1?.045:track.total-.045;selection=0;
 }
-function turn(delta:number){if(mode!=='walk')return;const candidates=optionsAt(upcoming(),lastHeroDir,track.index);if(candidates.length>1)selection=(selection+delta+candidates.length)%candidates.length;showRoadHint()}
-function showCaption(item:Linea|null){if(!item){subtitles.classList.remove('active');subtitles.setAttribute('aria-hidden','true');return}speaker.textContent=item.voz;subtitleText.textContent=item.texto;source.textContent=item.fuente?'SIN REMEDIO · '+item.fuente:'ESCENA INTERPRETATIVA';subtitles.classList.add('active');subtitles.setAttribute('aria-hidden','false')}
-function showChoices(){if(!currentSite)return;choices.replaceChildren();DIALOGOS[currentSite.id].bifurcaciones.forEach((b,i)=>{const button=document.createElement('button');button.type='button';const num=document.createElement('span');num.className='choice-num';num.textContent=String(i+1);const label=document.createElement('span');label.textContent=b.titulo;button.append(num,label);button.addEventListener('click',()=>choose(i));choices.append(button)});decisions.classList.add('active');decisions.setAttribute('aria-hidden','false')}
+function handleWalk(dt:number,t:number){
+ const axis=(getKey('w','arrowup')?1:0)-(getKey('s','arrowdown')?1:0)+mobile.forward;
+ const targetVelocity=T.MathUtils.clamp(axis,-1,1)*(getKey('shift')?6.1:3.5);
+ walkVelocity=T.MathUtils.damp(walkVelocity,targetVelocity,7,dt);
+ if(Math.abs(walkVelocity)<.035){hero.update(t,false);showRoadHint();return;}
+ const step=Math.sign(walkVelocity),delta=Math.min(.20,Math.abs(walkVelocity)*dt);
+ const beforeDistance=distance;
+ distance=T.MathUtils.clamp(distance+step*direction*delta,0,track.total);
+ // Colisiones simples y seguras con vehículos; nunca se camina a través de la buseta.
+ const predicted=interpolateTrack(track,distance).pos;
+ const former=interpolateTrack(track,beforeDistance).pos;
+ const vehicles=world.children.filter(o=>o.name.startsWith('vehiculo_'));
+ const blocked=vehicles.some(vehicle=>{
+   const d=Math.hypot(predicted.x-vehicle.position.x,predicted.z-vehicle.position.z);
+   const oldD=Math.hypot(former.x-vehicle.position.x,former.z-vehicle.position.z);
+   return d<.75&&d<oldD;
+ });
+ if(blocked){distance=beforeDistance;walkVelocity=0;positionHero(dt,step);hero.update(t,false);return;}
+
+ const atNode=step*direction>0?distance>=track.total-.002:distance<=.002;
+ if(atNode){
+   const node=step*direction>0?track.to:track.from,n=NODES[node];
+   if(step>0&&n.entry&&performance.now()>ignoreEntryUntil){
+     const site=SITES.find(s=>s.id===n.entry);
+     if(site?.scene){positionHero(dt,step);enter(site);return;}
+   }
+   const incoming=outward(track,node).multiplyScalar(-1);
+   continueFrom(node,incoming,step<0);lateral=0;
+ }
+ positionHero(dt,step);hero.update(t,true);showRoadHint();
+}
+function turn(delta:number){
+ if(mode!=='walk')return;
+ const candidates=optionsAt(upcoming(),lastHeroDir,track.index);
+ if(candidates.length>0){selection=(selection+delta+candidates.length)%candidates.length;showRoadHint();}
+ lateralTarget=T.MathUtils.clamp(lateralTarget+delta*.065,-.12,.12);
+}
+const VOICE_STYLES:Record<string,string>={
+ 'Escobar':'escobar','Ignacio':'escobar','Fina':'fina','Diego León':'diego','Federico':'federico',
+ 'Inga':'inga','Foción':'focion','Tío Pablo':'focion','Jefe':'focion','Monseñor':'monseñor',
+ 'Madre':'leonor','Alicia':'alicia','Prima Alicia':'alicia','Prima adolescente':'alicia',
+ 'Edén':'poeta','Narciso':'poeta','Poeta':'poeta','Ángela':'fina','Beatriz':'beatriz',
+ 'Ana María':'fina','Douglas':'federico'
+};
+const speech=document.getElementById('subtitles')!;
+function showCaption(item:Linea|null){
+ if(!item){speech.classList.remove('active');speech.setAttribute('aria-hidden','true');activeBubbleActor=null;return;}
+ const voice=VOICE_STYLES[item.voz];
+ activeBubbleActor=voice==='escobar'?hero.root:stage?.actors.find(p=>p.style===voice)?.root ?? stage?.actors[0]?.root ??hero.root;
+ speaker.textContent=item.voz==='Narrador'?'':item.voz;
+ subtitleText.textContent=item.texto;
+ speech.classList.toggle('ambient',item.voz==='Narrador');
+ source.textContent='';
+ speech.classList.add('active');speech.setAttribute('aria-hidden','false');
+}
+function locateSpeech(){
+ if(mode!=='interior'||!activeBubbleActor||!speech.classList.contains('active'))return;
+ const point=activeBubbleActor.getWorldPosition(new T.Vector3()).add(new T.Vector3(0,2.13,0));
+ point.project(camera);
+ const vw=window.innerWidth,vh=window.innerHeight;
+ const x=T.MathUtils.clamp((point.x*.5+.5)*vw, vw<720?108:155,vw-(vw<720?108:175));
+ const y=T.MathUtils.clamp((-.5*point.y+.5)*vh,vw<720?178:158,vh-(vw<720?260:195));
+ speech.style.left=x+'px';speech.style.top=y+'px';
+}
+function showChoices(){
+ if(!currentSite)return;
+ choices.replaceChildren();const story=DIALOGOS[currentSite.id];
+ story.bifurcaciones.forEach((b,i)=>{
+  const button=document.createElement('button');button.type='button';
+  button.className='choice-option';
+  const num=document.createElement('span');num.className='choice-num';num.textContent=String(i+1);
+  const copy=document.createElement('span');copy.className='choice-text';
+  const title=document.createElement('strong');title.textContent=b.titulo;
+  const description=document.createElement('small');description.textContent=CONTEXTOS[currentSite!.id]?.[i]??'Una variación contemporánea de esta escena';
+  copy.append(title,description);button.append(num,copy);
+  button.addEventListener('click',()=>choose(i));choices.append(button);
+ });
+ decisions.classList.add('active');decisions.setAttribute('aria-hidden','false');
+}
 function hideChoices(){decisions.classList.remove('active');decisions.setAttribute('aria-hidden','true');choices.replaceChildren()}
-function choose(i:number){if(phase!=='choice'||!currentSite)return;choiceIndex=i;phase='branch';stageTime=0;currentLine=-1;hideChoices();showCaption(null)}
-function changePhase(next:Phase){phase=next;stageTime=0;currentLine=-1;if(next==='choice'){showCaption(null);showChoices()}if(next==='complete'){showCaption(null);hint.textContent='RETROCEDE HACIA LA PUERTA O PULSA ESC';hint.classList.add('visible')}}
-function fadeTo(action:()=>void){if(lock)return;lock=true;mode='transition';veil.classList.add('active');window.setTimeout(()=>{action();veil.classList.remove('active');window.setTimeout(()=>{lock=false},680)},650)}
-function showSiteCaption(s:Site){el('place-number').textContent=String(SITES.indexOf(s)+1).padStart(2,'0')+' / 12';el('place-name').textContent=s.name;caption.classList.add('visible')}
+function choose(i:number){if(phase!=='choice'||!currentSite)return;choiceIndex=i;hideChoices();changePhase('branch')}
+function changePhase(next:Phase){
+ phase=next;stageTime=0;dialogueIndex=0;currentLine=-1;
+ if(next==='canonical'||next==='branch'){
+  hideChoices();hint.classList.add('visible');hint.textContent='← / ↓ ANTERIOR   ·   SIGUIENTE ↑ / →';
+  const lines=next==='canonical'?DIALOGOS[currentSite!.id].inicio:DIALOGOS[currentSite!.id].bifurcaciones[choiceIndex].lineas;
+  showCaption(lines[0]??null);currentLine=0;
+ }
+ if(next==='choice'){
+  showCaption(null);showChoices();hint.classList.remove('visible');
+ }
+ if(next==='complete'){
+  showCaption(null);hideChoices();hint.textContent='ESC PARA VOLVER AL GLOBO · ← PARA RELEER';hint.classList.add('visible');
+ }
+}
+function sceneStep(delta:number){
+ if(mode!=='interior'||lock||!currentSite)return;
+ if(phase==='arrival'){
+   if(delta>0){hero.root.position.z=1.6;changePhase('canonical');}
+   return;
+ }
+ if(phase==='choice'){
+   if(delta<0){phase='canonical';dialogueIndex=DIALOGOS[currentSite.id].inicio.length-1;showCaption(DIALOGOS[currentSite.id].inicio[dialogueIndex]);hint.classList.add('visible');hideChoices();}
+   return;
+ }
+ if(phase==='complete'){
+  if(delta<0&&choiceIndex>=0){phase='branch';dialogueIndex=DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas.length-1;showCaption(DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas[dialogueIndex]);hint.textContent='← / ↓ ANTERIOR   ·   SIGUIENTE ↑ / →';}
+  return;
+ }
+ const lines=phase==='canonical'?DIALOGOS[currentSite.id].inicio:DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas;
+ const next=dialogueIndex+delta;
+ if(next<0){dialogueIndex=0;return;}
+ if(next>=lines.length){changePhase(phase==='canonical'?'choice':'complete');return;}
+ dialogueIndex=next;currentLine=next;showCaption(lines[next]);
+}
+function fadeTo(action:()=>void){if(lock)return;lock=true;mode='transition';veil.classList.add('active');window.setTimeout(()=>{action();veil.classList.remove('active');window.setTimeout(()=>{lock=false},430)},490)}
+function showSiteCaption(s:Site){el('place-number').textContent='';el('place-name').textContent=s.name;caption.classList.add('visible');window.clearTimeout(captionTimeout);captionTimeout=window.setTimeout(()=>caption.classList.remove('visible'),3100)}
 function enter(site:Site){if(lock||mode==='interior')return;roadHint.classList.remove('visible');fadeTo(()=>{
  currentSite=site;stage=makeStage(site.id);scene.add(stage.root);world.visible=false;world.remove(hero.root);scene.add(hero.root);
  hero.root.quaternion.identity();hero.root.rotation.y=Math.PI;hero.root.scale.setScalar(1.08);hero.root.position.copy(stage.heroStart);
  stage.actors.forEach(a=>{originalActorPos.set(a,a.root.position.clone());originalActorRot.set(a,a.root.rotation.y)});
  showSiteCaption(site);orbit.enabled=false;orbit.autoRotate=false;camera.up.set(0,1,0);camera.fov=52;camera.updateProjectionMatrix();camera.position.set(1.15,3.0,4.36);camera.lookAt(0,1.48,-.85);
- phase='arrival';stageTime=0;currentLine=-1;choiceIndex=-1;showCaption(null);hideChoices();hint.classList.remove('visible');mode='interior';
+ phase='arrival';stageTime=0;currentLine=-1;choiceIndex=-1;showCaption(null);hideChoices();hint.classList.remove('visible');mode='interior';refreshMobile();
  })}
 function leave(){if(!stage||lock)return;fadeTo(()=>{
  scene.remove(stage!.root);stage=null;currentSite=null;scene.remove(hero.root);world.visible=true;world.add(hero.root);hero.root.scale.setScalar(.76);
  const node=direction===1?track.to:track.from;distance=direction===1?Math.max(0,track.total-.7):Math.min(track.total,.7);
  // Al salir, caminar hacia atrás permite alejarse de la puerta antes del próximo ingreso.
- direction=direction===1?-1:1;positionHero();mode='walk';ignoreEntryUntil=performance.now()+2500;
+ direction=direction===1?-1:1;positionHero();mode='walk';ignoreEntryUntil=performance.now()+2500;refreshMobile();
  showCaption(null);hideChoices();hint.classList.remove('visible');camera.fov=47;camera.updateProjectionMatrix();const {focus,wanted}=walkingShot();camera.position.copy(wanted);camera.up.set(0,1,0);camera.lookAt(focus);
  })}
 function updateInterior(dt:number,t:number,wallDt:number){if(!stage||!currentSite)return;stageTime+=wallDt;
  const story=DIALOGOS[currentSite.id];if(phase==='arrival'){
-  const step=T.MathUtils.smoothstep(stageTime,0,4.3);hero.root.position.z=T.MathUtils.lerp(stage.heroStart.z,1.6,step);hero.update(t,stageTime<4);if(stageTime>=4.3)changePhase('canonical');
+  const step=T.MathUtils.smoothstep(stageTime,0,2.7);hero.root.position.z=T.MathUtils.lerp(stage.heroStart.z,1.6,step);hero.update(t,stageTime<4);if(stageTime>=2.7)changePhase('canonical');
  }else{
   hero.update(t,false);
-  const f=(getKey('w','arrowup')?1:0)-(getKey('s','arrowdown')?1:0)+mobile.forward;
-  const s=(getKey('d','arrowright')?1:0)-(getKey('a','arrowleft')?1:0)+mobile.turn;
-  if(Math.abs(f)>.08||Math.abs(s)>.08){hero.root.position.z=T.MathUtils.clamp(hero.root.position.z-f*dt*1.9,-1.8,4.94);hero.root.position.x=T.MathUtils.clamp(hero.root.position.x+s*dt*1.5,-4.5,4.5);hero.update(t,true)}
-  if(hero.root.position.z>4.70){leave();return}
+  // Durante la escena las flechas recorren el relato, no atraviesan muebles ni actores.
+  if(phase==='complete'){
+   const f=(getKey('w','arrowup')?1:0)-(getKey('s','arrowdown')?1:0)+mobile.forward;
+   const side=(getKey('d','arrowright')?1:0)-(getKey('a','arrowleft')?1:0)+mobile.turn;
+   const nextX=T.MathUtils.clamp(hero.root.position.x+side*dt*1.15,-4.8,4.8);
+   const nextZ=T.MathUtils.clamp(hero.root.position.z-f*dt*1.55,-2.5,4.94);
+   const clear=stage.actors.every(a=>Math.hypot(a.root.position.x-nextX,a.root.position.z-nextZ)>.82);
+   if(clear){hero.root.position.x=nextX;hero.root.position.z=nextZ;hero.update(t,Math.abs(f)+Math.abs(side)>.12);}
+   if(hero.root.position.z>4.72){leave();return;}
+  }
  }
- if(phase==='canonical'){const i=Math.floor(stageTime/4.6);if(i>=story.inicio.length)changePhase('choice');else if(i!==currentLine){currentLine=i;showCaption(story.inicio[i])}}
- if(phase==='branch'&&choiceIndex>=0){const lines=story.bifurcaciones[choiceIndex].lineas,i=Math.floor(stageTime/5.0);if(i>=lines.length)changePhase('complete');else if(i!==currentLine){currentLine=i;showCaption(lines[i])}}
  // Expresiones y microcoreografías, visibles incluso sin subtítulos.
  stage.actors.forEach((actor,i)=>{
   const pos=originalActorPos.get(actor);if(!pos)return;actor.root.position.copy(pos);let move=false,angle=originalActorRot.get(actor)??0;
@@ -182,14 +307,15 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
   camera.position.lerp(wanted,1-Math.exp(-dt*5.4));
   camera.up.set(0,1,0);camera.lookAt(focus);
  }else if(mode==='interior'&&stage){
-  const actor=stage.actors.length?stage.actors[Math.max(0,currentLine)%stage.actors.length]:null;const cinematic=phase==='canonical'||phase==='branch';
-  const desired=new T.Vector3(cinematic&&actor?1.15+actor.root.position.x*.17:.86+Math.sin(t*.22)*.17,3.05+Math.sin(t*.30)*.08,cinematic?4.18:4.35);
-  const aim=new T.Vector3(cinematic&&actor?actor.root.position.x*.28:0,1.50,-.85);
-  camera.position.lerp(desired,1-Math.exp(-dt*1.7));camera.up.set(0,1,0);camera.lookAt(aim)
+  const actor=activeBubbleActor;const cinematic=phase==='canonical'||phase==='branch';
+  const targetActor=actor?.getWorldPosition(new T.Vector3());
+  const desired=new T.Vector3(cinematic&&targetActor?1.1+targetActor.x*.10:1.2,3.15+Math.sin(t*.25)*.07,4.55);
+  const aim=new T.Vector3(cinematic&&targetActor?targetActor.x*.24:0,1.53,-1.05);
+  camera.position.lerp(desired,1-Math.exp(-dt*1.6));camera.up.set(0,1,0);camera.lookAt(aim);locateSpeech()
  }
 }
-function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-10,43,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
-function beginWalking(){if(mode!=='overview')return;camera.fov=50;camera.updateProjectionMatrix();mode='walk';orbit.enabled=false;orbit.autoRotate=false;const {focus,wanted}=walkingShot();camera.position.copy(wanted);camera.up.set(0,1,0);camera.lookAt(focus);caption.classList.remove('visible')}
+function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';refreshMobile();orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-10,43,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
+function beginWalking(){if(mode!=='overview')return;camera.fov=50;camera.updateProjectionMatrix();mode='walk';refreshMobile();orbit.enabled=false;orbit.autoRotate=false;const {focus,wanted}=walkingShot();camera.position.copy(wanted);camera.up.set(0,1,0);camera.lookAt(focus);caption.classList.remove('visible')}
 function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt=Math.sin(p*2*Math.PI+.45),daylight=T.MathUtils.smoothstep(alt,-.20,.65),golden=Math.pow(1-Math.abs(alt-.08),4);
  sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=(.48+3.0*daylight)*(mode==='interior'?.26:1);sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
  sky.intensity=(.68+1.25*daylight)*(mode==='interior'?.52:1);fill.intensity=(.40+.54*daylight)*(mode==='interior'?.38:1);starMat.opacity=Math.pow(1-daylight,2)*.80;
@@ -226,19 +352,41 @@ window.addEventListener('keydown',e=>{
  if(key==='escape'){if(about.classList.contains('open'))closeAbout();else if(mode==='interior')leave();else toOverview()}
  if(key==='n')timeOfDay+=75;
  if(mode==='overview'&&['w','s','arrowup','arrowdown'].includes(key))beginWalking();
+ if(mode==='interior'&&['w','arrowup','s','arrowdown'].includes(key)&&phase!=='complete')sceneStep(['w','arrowup'].includes(key)?1:-1);
  if(mode==='walk'&&['a','arrowleft'].includes(key))turn(-1);if(mode==='walk'&&['d','arrowright'].includes(key))turn(1);
  if(phase==='choice'&&mode==='interior'&&['1','2','3'].includes(key))choose(Number(key)-1);
- if(e.code==='Space'&&mode==='interior'){if(phase==='arrival')changePhase('canonical');else if(phase==='canonical')stageTime+=4.75;else if(phase==='branch')stageTime+=5.1}
+ if(e.code==='Space'&&mode==='interior')sceneStep(1);
 });
 window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
-let touchStart:{x:number;y:number}|null=null;renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'||paused)return;if(mode==='overview'&&e.detail>=2)beginWalking();if(mode==='walk'||mode==='interior')touchStart={x:e.clientX,y:e.clientY}});
-renderer.domElement.addEventListener('pointermove',e=>{if(!touchStart)return;mobile.forward=T.MathUtils.clamp((touchStart.y-e.clientY)/90,-1,1);mobile.turn=T.MathUtils.clamp((e.clientX-touchStart.x)/90,-1,1)});
-const release=()=>{touchStart=null;mobile.forward=mobile.turn=0};renderer.domElement.addEventListener('pointerup',release);renderer.domElement.addEventListener('pointercancel',release);
+// En móvil la esfera se puede girar libremente; doble toque cambia a recorrer.
+let previousTap=0;
+renderer.domElement.addEventListener('pointerup',e=>{
+ if(mode!=='overview')return;
+ if(e.pointerType==='touch'){
+  const now=performance.now();if(now-previousTap<340){beginWalking();previousTap=0;}else previousTap=now;
+ }
+});
+renderer.domElement.addEventListener('dblclick',()=>{if(mode==='overview')beginWalking()});
+// La rotación táctil del globo la gestiona OrbitControls; caminar usa controles independientes.
+const mobilePad=document.getElementById('mobile-pad')!;
+function refreshMobile(){mobilePad.classList.toggle('visible',mode==='walk'||mode==='interior');}
+for(const button of Array.from(mobilePad.querySelectorAll<HTMLButtonElement>('button[data-key]'))){
+ const key=button.dataset.key!;
+ const release=()=>{keys.delete(key);button.classList.remove('pressed')};
+ button.addEventListener('pointerdown',e=>{
+  e.preventDefault();button.setPointerCapture(e.pointerId);button.classList.add('pressed');
+  if(mode==='interior'&&phase!=='complete'&&(key==='w'||key==='s')){sceneStep(key==='w'?1:-1);return;}
+  if(mode==='walk'&&(key==='a'||key==='d')){turn(key==='a'?-1:1);return;}
+  keys.add(key);
+ });
+ button.addEventListener('pointerup',release);button.addEventListener('pointercancel',release);
+ button.addEventListener('lostpointercapture',release);
+}
 el('center').addEventListener('click',toOverview);function openAbout(){paused=true;about.classList.add('open');about.setAttribute('aria-hidden','false')}function closeAbout(){paused=false;about.classList.remove('open');about.setAttribute('aria-hidden','true')}
 el('moon').addEventListener('click',openAbout);el('about-close').addEventListener('click',closeAbout);el('retry').addEventListener('click',()=>location.reload());
 Object.defineProperty(window,'__BOGOTA_TEST__',{
  value:{
-   getState:()=>({mode,phase,site:currentSite?.id||null,route:track.index,distance,timeOfDay,worldObjects:world.children.length}),
+   getState:()=>({mode,phase,site:currentSite?.id||null,route:track.index,distance,timeOfDay,dialogueIndex,dialogueTotal:currentSite?(phase==='branch'?DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas.length:DIALOGOS[currentSite.id].inicio.length):0,hero:{x:hero.root.position.x,y:hero.root.position.y,z:hero.root.position.z},worldObjects:world.children.length}),
    enterSite:(id:PlaceId)=>{const s=SITES.find(s=>s.id===id);if(s?.scene)enter(s);},
    walk:beginWalking,
    jumpDay:()=>{timeOfDay+=75;},

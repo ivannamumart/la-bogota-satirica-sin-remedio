@@ -16,9 +16,9 @@ function mountain(x:number,z:number){
  // Los Cerros ocupan el oriente (derecha de la planta) y son una sierra continua.
  // Sus crestas no son conos independientes; la forma se pliega sobre el borde.
  const e=smooth(3.8,7.2,x),radius=Math.hypot(x,z),fade=1-smooth(9.0,10.45,radius);
- const ridge=1.70 +.56*Math.sin(z*.65+.45)+.24*Math.sin(z*1.58+1.2);
- const mon=2.25*Math.exp(-Math.pow((z+2.05)/1.25,2));
- const gua=1.50*Math.exp(-Math.pow((z-1.40)/1.38,2));
+ const ridge=2.42 +.71*Math.sin(z*.65+.45)+.24*Math.sin(z*1.58+1.2);
+ const mon=3.05*Math.exp(-Math.pow((z+2.05)/1.25,2));
+ const gua=2.12*Math.exp(-Math.pow((z-1.40)/1.38,2));
  const needle=.22*Math.sin(z*3.3+x*1.12)**2;
  return Math.max(0,(ridge+mon+gua+needle)*e*fade);
 }
@@ -59,7 +59,7 @@ function cap(){const segments=196,rings=90,vertices:number[]=[],colors:number[]=
 }
 // Topographic isolines restricted to the mountain band; elevation measured above sphere.
 function contourSegments(parent:T.Group){const vertices:number[]=[],xs=5.0,xe=10.0,zs=-7.1,ze=7.1,sz=.14;
- for(const lvl of [.38,.67,.98,1.32,1.68,2.05,2.46,2.92,3.39]){
+ for(const lvl of [.42,.80,1.15,1.55,2.04,2.54,3.14,3.72,4.32,5.02,5.62]){
   for(let x=xs;x<xe;x+=sz)for(let z=zs;z<ze;z+=sz){
    if(Math.hypot(x,z)>10.1)continue;
    const a=[[x,z],[x+sz,z],[x+sz,z+sz],[x,z+sz]] as [number,number][];
@@ -143,8 +143,8 @@ function chapel(world:T.Group,x:number,z:number,scale:number){const g=new T.Grou
  block(g,.18,.31,.04,paint('charcoal'),0,.17,.332);block(g,.05,.42,.04,stone,0,1.28,0);block(g,.21,.055,.055,stone,0,1.40,0);world.add(g)
 }
 function vehicles(world:T.Group){
- const points:[number,number,'bus'|'taxi',number][]=[[-4.95,4.07,'bus',.07],[-1.85,4.08,'taxi',.15],[2.45,4.18,'taxi',-.12],[.0,-3.85,'bus',Math.PI/2]];
- points.forEach(([x,z,type,angle])=>{const v=eraVehicle(type);v.position.copy(terrain(x,z,.18));v.rotation.y=angle;v.scale.setScalar(type==='bus'?.88:.88);world.add(v)})
+ const points:[number,number,'bus'|'taxi',number][]=[[-4.95,5.14,'bus',.07],[-1.85,5.18,'taxi',.15],[2.45,5.15,'taxi',-.12],[1.30,-3.85,'bus',Math.PI/2]];
+ points.forEach(([x,z,type,angle])=>{const v=eraVehicle(type);v.position.copy(terrain(x,z,.18));v.rotation.y=angle;v.scale.setScalar(type==='bus'?.88:.88);v.name='vehiculo_'+type+'_'+x+'_'+z;world.add(v)})
 }
 export function createPlanet(){
  const world=new T.Group();world.name='bogota_satira_corona_superior';world.add(texturedGraySphere());world.add(cap());contourSegments(world);crownContours(world);

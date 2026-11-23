@@ -1,49 +1,25 @@
-# La Bogotá satírica de *Sin remedio* — V06 (revisión de dirección de arte)
+# La Bogotá satírica de *Sin remedio* — V07
 
-Experiencia web en **Three.js + TypeScript + Vite** basada en una cartografía especulativa de la Bogotá narrativa de Antonio Caballero. La esfera completa conserva un acabado de cemento gris y la corona superior aloja once escenarios interactivos, más el paisaje no transitable de los Cerros Orientales.
+Prototipo web interactivo para una cartografía especulativa de la Bogotá de la novela de Antonio Caballero. La esfera conserva su base gris; la corona superior concentra doce lugares, de los cuales once albergan microescenas.
 
-## Qué se rehizo en V06
+## Cómo probar
 
-- Reorganización de la planta maestra para separar mejor los edificios principales, manteniendo las relaciones geográficas interpretativas.
-- Arquitecturas narrativas más grandes, fachadas con ladrillo, cornisas, balcones, escalinatas, toldos y accesos reconocibles.
-- Jardines bajos y vegetación urbana andina, sin pinos decorativos.
-- Carreteras principales reconocibles (Séptima, calle 26) con bifurcaciones y caminos secundarios.
-- Mayor relieve para los Cerros Orientales y materiales de colores contenidos.
-- Cámara de apertura más baja, con una lectura escénica más cercana al referente de mini-mundo.
+Requiere Node.js 20 o superior. En la carpeta del proyecto, ejecutar `npm ci`, `npm run dev` y abrir la dirección que indique Vite (normalmente `http://localhost:5173/`).
 
-**Estado:** prototipo artístico jugable para revisión; las mallas procedimentales no equivalen aún a personajes esculpidos profesionalmente. Las escenas interiores y sus microanimaciones siguen siendo una base que requerirá dirección cinematográfica individual.
+### Controles
 
-## Abrir en Mac
+**Globo:** arrastrar con ratón o dedo para girarlo; rueda/pellizco para acercar. Pulsar W o flecha arriba para entrar en modo recorrido. En móvil, doble toque sobre el mundo.
 
-Requiere Node.js 20 o posterior:
+**Caminos:** W/↑ avanzar; S/↓ retroceder por el mismo camino; A/← y D/→ seleccionar desvíos en intersecciones; Shift correr. Escobar se desplaza por las carreteras y sus ramales, no sobre los cerros.
 
-```bash
-npm ci
-npm run dev
-```
+**Escenas:** al entrar, se desarrolla una pequeña coreografía inicial. A continuación, ↑/W o Espacio avanza un parlamento y ↓/S regresa al anterior. **Los diálogos ya no corren con un temporizador**. Cuando terminan, aparecen tres alternativas con contexto, seleccionables con clic/toque o números 1–3. Esc regresa al mundo; una vez terminada la escena también se puede caminar hacia la salida.
 
-Abre la URL local que indica Vite (normalmente http://localhost:5173).
+**Móvil:** controles táctiles ↑↓←→ en la parte inferior. Durante una conversación, ↑ y ↓ controlan el diálogo, no la posición del personaje. El botón central centra el globo y la luna abre «Sobre el proyecto». N cambia el ciclo de luz para probar las horas.
 
-## Controles
+## Narración y autoría
 
-- Ratón: rotar y acercar el globo.
-- W/S o flechas arriba/abajo: empezar el recorrido y caminar por los caminos.
-- A/D o flechas izquierda/derecha: elegir dirección en las intersecciones.
-- Mayúsculas (Shift): correr.
-- Espacio: avanzar un momento narrativo; 1/2/3: seleccionar una bifurcación.
-- Escape: salir del escenario; N: acelerar el ciclo día-noche para probarlo.
-- Botón centrar: volver a la vista general; luna: «Sobre el proyecto».
-
-## Método
-
-La ubicación y escala son **escenográficas e interpretativas**, no coordenadas geodésicas ni reconstrucciones patrimoniales exactas. El Jockey, la Porciúncula, la Plaza de Toros y las Torres del Parque sirven como anclajes de época; los lugares de ficción mantienen el emplazamiento y sentido narrativo del corpus.
+Las líneas identificadas con referencias P- proceden del corpus previamente validado; el resto es **texto original interpretativo para el prototipo**, no una cita de Caballero. Esta es una experiencia en desarrollo, no un juego de producción terminada. Las rutas representan relaciones históricas aproximadas y una interpretación escénica, no coordenadas geográficas exactas.
 
 ## Verificación
 
-- `npm run build`: compilación y auditoría TypeScript.
-- `node tests/smoke.mjs` con servidor de previsualización en `4173`: prueba WebGL de escenas, movimiento, controles, luna y ciclo.
-- GitHub Actions ejecuta esas verificaciones y conserva capturas como artefacto QA.
-
-## Dirección de arte V06
-
-La V06 separa conjuntos urbanos y vuelve visibles los costados y hastiales de las arquitecturas. Véase `docs/REVISION_VISUAL_V06.md`. Los esquemas PDF V04 se conservan como antecedente, pero las coordenadas y entradas vigentes están en `src/data/layout.ts`.
+`npm run build` debe ejecutar TypeScript y Vite. La acción de GitHub ejecuta además un navegador con WebGL, verifica controles, diálogos, decisiones, luna y viewport móvil, y guarda capturas en `docs/qa/`.
