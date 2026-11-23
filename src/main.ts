@@ -23,7 +23,23 @@ const sun=new T.DirectionalLight(0xffedcf,3.6);sun.position.set(-20,35,25);scene
 const fill=new T.DirectionalLight(0x95b4b3,1.0);fill.position.set(15,8,-18);scene.add(fill);
 const starPos:number[]=[];let seed=1729;for(let i=0;i<550;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const y=seed/4294967296*2-1;seed=(Math.imul(seed,1664525)+1013904223)>>>0;const a=seed/4294967296*Math.PI*2;starPos.push(105*Math.sqrt(1-y*y)*Math.cos(a),105*y,105*Math.sqrt(1-y*y)*Math.sin(a))}
 const starGeo=new T.BufferGeometry();starGeo.setAttribute('position',new T.Float32BufferAttribute(starPos,3));const starMat=new T.PointsMaterial({color:0xf6f6e8,size:.55,opacity:0,transparent:true,depthWrite:false});scene.add(new T.Points(starGeo,starMat));
-const {world,routes}=createPlanet();scene.add(world);
+const {world,routes,buildings}=createPlanet();scene.add(world);
+// Cajas de colisión estáticas: evitan que la cámara atraviese edificios al seguir a Escobar.
+world.updateMatrixWorld(true);
+const cameraObstacles=[...buildings.values(),...world.children.filter(o=>o.name.startsWith('hito_no_jugable_'))]
+ .map(o=>new T.Box3().setFromObject(o)).filter(box=>!box.isEmpty());
+const cameraRay=new T.Ray(),cameraHit=new T.Vector3();
+function safeCamera(focus:T.Vector3,wanted:T.Vector3){
+ const ray=wanted.clone().sub(focus),length=ray.length();if(length<.01)return wanted;
+ cameraRay.origin.copy(focus);cameraRay.direction.copy(ray).divideScalar(length);
+ let available=length;
+ for(const obstacle of cameraObstacles){
+  if(obstacle.containsPoint(focus))continue;
+  const hit=cameraRay.intersectBox(obstacle,cameraHit);
+  if(hit){const d=focus.distanceTo(hit);if(d>.10)available=Math.min(available,Math.max(.9,d-.38));}
+ }
+ return focus.clone().addScaledVector(cameraRay.direction,available);
+}
 const hero=character('escobar',.50);world.add(hero.root);
 type Mode='overview'|'walk'|'interior'|'transition';type Phase='arrival'|'canonical'|'choice'|'branch'|'complete';
 let mode:Mode='overview',phase:Phase='arrival',stage:Stage|null=null,currentSite:Site|null=null,lock=false,paused=false;
@@ -90,7 +106,7 @@ function leave(){if(!stage||lock)return;fadeTo(()=>{
  const node=direction===1?track.to:track.from;distance=direction===1?Math.max(0,track.total-.7):Math.min(track.total,.7);
  // Al salir, caminar hacia atrás permite alejarse de la puerta antes del próximo ingreso.
  direction=direction===1?-1:1;positionHero();mode='walk';ignoreEntryUntil=performance.now()+2500;
- showCaption(null);hideChoices();hint.classList.remove('visible');camera.fov=47;camera.updateProjectionMatrix();camera.position.copy(lastHeroPos).addScaledVector(lastHeroDir,-4.6).add(new T.Vector3(0,3.35,0));camera.up.set(0,1,0);camera.lookAt(lastHeroPos.clone().addScaledVector(lastHeroDir,.65).add(new T.Vector3(0,.78,0)));
+ showCaption(null);hideChoices();hint.classList.remove('visible');camera.fov=47;camera.updateProjectionMatrix();const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,.65).add(new T.Vector3(0,.78,0));const wanted=lastHeroPos.clone().addScaledVector(lastHeroDir,-4.6).add(new T.Vector3(0,3.35,0));camera.position.copy(safeCamera(focus,wanted));camera.up.set(0,1,0);camera.lookAt(focus);
  })}
 function updateInterior(dt:number,t:number,wallDt:number){if(!stage||!currentSite)return;stageTime+=wallDt;
  const story=DIALOGOS[currentSite.id];if(phase==='arrival'){
@@ -120,7 +136,9 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
  if(mode==='walk'){
   const desired=lastHeroPos.clone().addScaledVector(lastHeroDir,-4.6).add(new T.Vector3(0,3.35,0));
   const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,.65).add(new T.Vector3(0,.78,0));
-  camera.position.lerp(desired,1-Math.exp(-dt*2.25));camera.up.lerp(new T.Vector3(0,1,0),1-Math.exp(-dt*3.5)).normalize();camera.lookAt(focus);
+  const unobstructed=safeCamera(focus,desired);
+  if(camera.position.distanceTo(unobstructed)>3.2)camera.position.copy(unobstructed);
+  else camera.position.lerp(unobstructed,1-Math.exp(-dt*5.6));camera.up.lerp(new T.Vector3(0,1,0),1-Math.exp(-dt*3.5)).normalize();camera.lookAt(focus);
  }else if(mode==='interior'&&stage){
   const actor=stage.actors.length?stage.actors[Math.max(0,currentLine)%stage.actors.length]:null;const cinematic=phase==='canonical'||phase==='branch';
   const desired=new T.Vector3(cinematic&&actor?1.20+actor.root.position.x*.23:Math.sin(t*.22)*.85,3.48+Math.sin(t*.30)*.08,cinematic?8.70:10.45);
@@ -129,7 +147,7 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
  }
 }
 function toOverview(){if(mode==='interior'){leave();return}camera.fov=37;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-7,51,33);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
-function beginWalking(){if(mode!=='overview')return;camera.fov=47;camera.updateProjectionMatrix();mode='walk';orbit.enabled=false;orbit.autoRotate=false;camera.position.copy(lastHeroPos).addScaledVector(lastHeroDir,-4.6).add(new T.Vector3(0,3.35,0));camera.up.set(0,1,0);camera.lookAt(lastHeroPos.clone().addScaledVector(lastHeroDir,.65).add(new T.Vector3(0,.78,0)));caption.classList.remove('visible')}
+function beginWalking(){if(mode!=='overview')return;camera.fov=47;camera.updateProjectionMatrix();mode='walk';orbit.enabled=false;orbit.autoRotate=false;const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,.65).add(new T.Vector3(0,.78,0));const wanted=lastHeroPos.clone().addScaledVector(lastHeroDir,-4.6).add(new T.Vector3(0,3.35,0));camera.position.copy(safeCamera(focus,wanted));camera.up.set(0,1,0);camera.lookAt(focus);caption.classList.remove('visible')}
 function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt=Math.sin(p*2*Math.PI+.45),daylight=T.MathUtils.smoothstep(alt,-.20,.65),golden=Math.pow(1-Math.abs(alt-.08),4);
  sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=.48+3.0*daylight;sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
  sky.intensity=.68+1.25*daylight;fill.intensity=.40+.54*daylight;starMat.opacity=Math.pow(1-daylight,2)*.80;
