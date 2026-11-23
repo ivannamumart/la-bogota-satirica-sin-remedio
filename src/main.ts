@@ -6,6 +6,7 @@ import * as T from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {createPlanet,interpolateTrack,SITES,R,dir,type Site,type Track} from './world/planet';
 import {character,type Person} from './world/people';
+import type {PlaceId} from './world/architecture';
 import {makeStage,type Stage} from './world/scenes';
 import {DIALOGOS,type Linea} from './story/dialogues';
 import './ui/styles.css';
@@ -69,7 +70,7 @@ function switchTrack(siteId:number,direction:1|-1){
  if(!next)next=direction===1?routes[siteId%11]:routes[(siteId+10)%11];
  route=next;
  if(branch){facing=branch.from===siteId?1:-1;routeDistance=facing===1?0:route.total;}
- else{facing=1;routeDistance=direction===1?0:route.total;}
+ else{facing=direction;routeDistance=direction===1?0:route.total;}
 }
 function labelFor(index:number){const site=SITES[index];if(!site)return;el('place-number').textContent=String(index+1).padStart(2,'0')+' / 12';el('place-name').textContent=site.name;}
 function handleWalk(dt:number){
