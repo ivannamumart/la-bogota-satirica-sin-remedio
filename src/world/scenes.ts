@@ -108,17 +108,10 @@ export function makeStage(id:PlaceId):Stage{
  if(interior){
   const theme=id==='oasis'?'olive':id==='unicornio'?'slate':id==='jockey'||id==='casa_familiar'?'stone':id==='taller'?'stucco':'plaster';
   room(g,theme,id==='unicornio'?'charcoal':id==='porciuncula'?'stone':'wood',12,11,id==='porciuncula'?6.4:4.9);
-  // Una puerta legible para salir caminando, como continuidad física de la llegada.
-  // Acceso abierto alineado con el recorrido: se sale retrocediendo por el vano.
-  // El marco en lugar de una hoja opaca permite ver la escena y no bloquea la cámara.
-  const portal=new T.Group();portal.position.set(0,0,4.87);g.add(portal);
-  const jamb=paint('cedar',0x765942),trim=paint('stone',0xc9b49d);
-  for(const side of [-1,1]){
-    block(portal,.19,2.76,.17,jamb,side*.79,1.38,0);
-    block(portal,.08,2.68,.21,trim,side*.68,1.38,-.06);
-  }
-  block(portal,1.78,.23,.20,jamb,0,2.83,0);
-  block(portal,1.46,.09,.30,trim,0,.045,-.03);
+  // La puerta queda fuera del encuadre cinematográfico; la salida física sigue
+  // estando en z>4.70. El umbral no tapa al protagonista ni los microrelatos.
+  block(g,2.25,.035,.34,paint('stone'),0,.035,4.60);
+
  }
  if(id==='apartamento'){
    rug(g,0,.30,4.4,3.35,'purple');bookcase(g,-4.7,-4.75,1.20,3.05);

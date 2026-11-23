@@ -74,6 +74,20 @@ function contourSegments(parent:T.Group){const vertices:number[]=[],xs=5.0,xe=10
  }
  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));parent.add(new T.LineSegments(g,new T.LineBasicMaterial({color:0x486858,transparent:true,opacity:.66,depthWrite:false})))
 }
+/** Trazos topográficos de baja intensidad en la corona libre; dialogan con el papel acuarelado. */
+function crownContours(parent:T.Group){
+ for(let band=0;band<6;band++){
+   const radius=6.65+band*.61,points:T.Vector3[]=[];
+   for(let j=0;j<=288;j++){
+      const a=j/288*Math.PI*2;
+      const rr=radius*(1+.018*Math.sin(a*5.0+band*.24)+.009*Math.sin(a*11.0+band));
+      const x=rr*Math.cos(a),z=rr*Math.sin(a);
+      points.push(terrain(x,z,.061));
+   }
+   const geo=new T.BufferGeometry().setFromPoints(points);
+   parent.add(new T.Line(geo,new T.LineBasicMaterial({color:0x657a68,transparent:true,opacity:.14,depthWrite:false})));
+ }
+}
 function roadPath(edge:typeof EDGES[number]){
  const s=NODES[nodeIndex.get(edge.from)!],t=NODES[nodeIndex.get(edge.to)!];
  const all:[[number,number],...[number,number][]]=[[s.x,s.z],...(edge.control??[]),[t.x,t.z]];
@@ -133,7 +147,7 @@ function vehicles(world:T.Group){
  points.forEach(([x,z,type,angle])=>{const v=eraVehicle(type);v.position.copy(terrain(x,z,.18));v.rotation.y=angle;v.scale.setScalar(type==='bus'?.88:.88);world.add(v)})
 }
 export function createPlanet(){
- const world=new T.Group();world.name='bogota_satira_corona_superior';world.add(texturedGraySphere());world.add(cap());contourSegments(world);
+ const world=new T.Group();world.name='bogota_satira_corona_superior';world.add(texturedGraySphere());world.add(cap());contourSegments(world);crownContours(world);
  const routes=EDGES.map((e,i)=>road(e,i));routes.forEach(r=>world.add(r.group));
  // Plintos orgánicos bajos, sin plataformas geométricas que parezcan piezas pegadas.
  const buildings=new Map<PlaceId,T.Group>();

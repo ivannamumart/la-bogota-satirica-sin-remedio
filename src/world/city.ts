@@ -97,6 +97,12 @@ function residence(g:T.Group,w:number,d:number,h:number,kind:'brick'|'stucco'|'m
      balcony(g,x,1.78,z+.07,.68);
    }
  }
+ // Contrafachada construida: el globo gira y todos los lados deben ser legibles.
+ const back=new T.Group();back.rotation.y=Math.PI;g.add(back);
+ for(const yy of [1.03,2.14])for(const xx of [-w*.29,0,w*.29]){
+   window(back,xx,yy,d/2-.055,.42,.54,kind==='mansion',false);
+ }
+ for(const xx of [-w*.46,w*.46])cub(back,.10,h,.14,STONE,xx,h/2,d/2-.025);
  roof(g,w,d,h,kind==='mansion'?'mansard':'tile');
  for(let k=0;k<6;k++){const yy=.30+k*.45;if(yy<h-.2)beam(g,-w*.46,yy,-d*.49,w*.46,yy,-d*.49,.007,paint('stone',0xb4aca3))}
  // Costados con ventanería reconocible en vistas de cámara oblicua
@@ -132,6 +138,8 @@ function neoclassical(g:T.Group){residence(g,3.8,2.3,3.02,'mansion');const z=1.2
  trees(g,[[-2.7,1.45,1.24],[2.7,1.50,1.29]],'garden');
 }
 function modern(g:T.Group,w=2.5,h=4.35){cub(g,w,h,2.00,STONE,0,h/2);for(let y=.62;y<h-.45;y+=.67){for(let x=-w*.33;x<=w*.36;x+=.57){window(g,x,y,1.05,.44,.43,false,false)}}
+ const rear=new T.Group();rear.rotation.y=Math.PI;g.add(rear);
+ for(let y=.65;y<h-.36;y+=.69)for(let x=-w*.29;x<=w*.30;x+=.62)window(rear,x,y,1.05,.39,.41,false,false);
  cub(g,w+.2,.18,2.18,CREAM,0,h+.04);doorway(g,1.05,.72,1.38,true);
  cub(g,2.00,.35,.49,STONE,0,1.37,1.26);
 }
@@ -139,6 +147,8 @@ function nightclub(g:T.Group){const front=1.41;
  cub(g,4.25,2.86,2.82,paint('bluegray',0x68717d),0,1.43);
  cub(g,4.38,.23,2.94,paint('purple',0x826a84),0,2.81);
  for(let x of [-1.41,-.75,.75,1.41]){window(g,x,1.60,front,.53,.79,false,false)}
+ const back=new T.Group();back.rotation.y=Math.PI;g.add(back);
+ for(const x of [-1.40,-.50,.50,1.40])window(back,x,1.51,front,.47,.65,false,false);
  doorway(g,front,.92,1.55);cub(g,3.4,.20,.70,paint('purple',0xc18b9d),0,2.18,front+.38);
  for(let i=0;i<6;i++){cub(g,.31,.28,.08,paint(i%2?'olive':'purple',i%2?0xb9c98a:0xb968a4),-1.22+i*.48,2.23,front+.46)}
  sign(g,'EL UNICORNIO',3.25,.56,0,3.09,front+.22,'#282d33','#e6bdd1');
