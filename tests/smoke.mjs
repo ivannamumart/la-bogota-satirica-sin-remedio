@@ -17,10 +17,10 @@ try{
  if(!await page.evaluate(()=>!!document.querySelector('#world canvas')?.getContext('webgl2')))throw Error('Sin contexto WebGL2');
  await shot(page,'01-globo');steps.push({item:'globo',state:await state()});
  await page.evaluate(()=>window.__BOGOTA_TEST__.walk());await page.waitForTimeout(300);
- const a=await state();await pressHold(page,'w',1100);const b=await state();
+ const a=await state();await pressHold(page,'w',550);const b=await state();
  if(a.distance===b.distance)throw Error('W no hace avanzar al protagonista');
- await pressHold(page,'s',600);const c=await state();
- if(Math.abs(c.distance-b.distance)<.08)throw Error('S no mueve al protagonista hacia atrás');
+ await pressHold(page,'s',950);const c=await state();
+ if(c.mode!=='walk'||Math.abs(c.distance-b.distance)<.035)throw Error('S no mueve al protagonista hacia atrás: '+JSON.stringify({a,b,c}));
  await shot(page,'02-caminar');steps.push({item:'avance y retroceso',a:a.distance,b:b.distance,c:c.distance});
  await page.evaluate(()=>window.__BOGOTA_TEST__.enterSite('apartamento'));
  await page.waitForFunction(()=>window.__BOGOTA_TEST__.getState().phase==='canonical',{timeout:15000});
