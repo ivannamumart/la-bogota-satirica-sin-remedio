@@ -1,7 +1,7 @@
 /** Planta narrativa V04: x=oriente y z=-norte; unidad escénica ficticia (no EPSG). */
 export type PlaceId='apartamento'|'taller'|'oasis'|'unicornio'|'jockey'|'porciuncula'|'parque'|'casa_familiar'|'oficina'|'cementerio'|'septima'|'cerros';
 export type PlaceDef={id:PlaceId;name:string;area:string;x:number;z:number;scale:number;scene:boolean;kind:'domestico'|'bohemio'|'institucional'|'paisaje'|'urbano'|'ritual'|'nocturno'|'memoria'};
-export const PLACES:PlaceDef[]=[
+const RAW_PLACES:PlaceDef[]=[
  {id:'apartamento',name:'LA SOLEDAD',area:'Apartamento de Ignacio y Fina',x:-6.00,z:-2.28,scale:1.18,scene:true,kind:'domestico'},
  {id:'taller',name:'TALLER DE DIEGO LEÓN',area:'Taller de arte y ajedrez',x:-7.15,z:1.78,scale:1.10,scene:true,kind:'bohemio'},
  {id:'oasis',name:'EL OASIS',area:'Bar y poetas',x:-3.72,z:4.74,scale:1.16,scene:true,kind:'bohemio'},
@@ -15,9 +15,11 @@ export const PLACES:PlaceDef[]=[
  {id:'cementerio',name:'CEMENTERIO CENTRAL',area:'Muerte y memoria',x:-7.20,z:4.95,scale:.68,scene:true,kind:'memoria'},
  {id:'cerros',name:'CERROS ORIENTALES',area:'Horizonte no transitable',x:8.35,z:-.45,scale:1.00,scene:false,kind:'paisaje'}
 ];
+export const SPREAD=1.35;
+export const PLACES:PlaceDef[]=RAW_PLACES.map(p=>({...p,x:p.x*SPREAD,z:p.z*SPREAD}));
 export type NodeDef={id:string;x:number;z:number;entry?:PlaceId;label?:string};
 // Vías interconectadas: Séptima N-S, Calle 26 E-O, ramales barriales. 
-export const NODES:NodeDef[]=[
+const RAW_NODES:NodeDef[]=[
  {id:'s0',x:.0,z:7.8,label:'Séptima / centro'}, {id:'s1',x:.0,z:4.2,label:'Séptima / Calle 26'},
  {id:'s2',x:.0,z:1.0,label:'Séptima / Parque'}, {id:'s3',x:.0,z:-2.45,label:'Séptima / Chapinero'},
  {id:'s4',x:.0,z:-5.35,label:'Séptima / Porciúncula'}, {id:'s5',x:-.25,z:-7.75,label:'Séptima / norte'},
@@ -39,6 +41,7 @@ export const NODES:NodeDef[]=[
  {id:'s3w',x:-2.95,z:-2.45},
  {id:'w3',x:-6.30,z:1.58},
 ];
+export const NODES:NodeDef[]=RAW_NODES.map(n=>({...n,x:n.x*SPREAD,z:n.z*SPREAD}));
 export type EdgeDef={from:string;to:string;kind:'septima'|'veintiseis'|'barrio'|'sendero';control?:[number,number][]};
 export const EDGES:EdgeDef[]=[
  {from:'s0',to:'s1',kind:'septima'}, {from:'s1',to:'s2',kind:'septima'}, {from:'s2',to:'s3',kind:'septima'},
@@ -63,11 +66,12 @@ export const EDGES:EdgeDef[]=[
  {from:'n5',to:'porciuncula-door',kind:'sendero'},
  {from:'s5',to:'unicornio-door',kind:'sendero'},
 ];
-export const DECOR=[
+const RAW_DECOR=[
  {id:'plaza_toros',x:1.65,z:3.12,label:'Plaza de Toros La Santamaría'},
  {id:'torres_parque',x:4.25,z:1.42,label:'Torres del Parque · 1970'},
  {id:'tequendama',x:5.83,z:6.00,label:'Centro Internacional Tequendama'},
  {id:'museo_nacional',x:-1.65,z:2.50,label:'Museo Nacional'}
 ] as const;
-export const R=12;
-export const CAP_R=10.2;
+export const DECOR=RAW_DECOR.map(d=>({...d,x:d.x*SPREAD,z:d.z*SPREAD}));
+export const R=15;
+export const CAP_R=13.8;

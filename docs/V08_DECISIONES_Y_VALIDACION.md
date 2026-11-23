@@ -4,7 +4,7 @@
 
 - La base inferior sigue siendo una esfera gris de cemento; no se llena con más ciudad.
 - Sobre ella se integra una explanada urbana suavemente curvada y continua, con la misma malla que forma los Cerros Orientales. **Los Cerros no son un objeto colocado encima de la esfera**.
-- La explanada tiene gradiente controlado y explanadas locales en torno a los edificios, para evitar el efecto de construcciones flotantes. Se mantienen las once puertas y la red de carreteras.
+- La distribución se amplía proporcionalmente por 1,35 para dejar más aire entre hitos sin alterar las relaciones geográficas; la cámara de visión general se recalibra al radio mayor. La explanada tiene gradiente controlado y explanadas locales en torno a los edificios, para evitar el efecto de construcciones flotantes. Se mantienen las once puertas y la red de carreteras.
 - La casa familiar se desplazó levemente hacia el norte. Se preservan los hitos patrimoniales como paisaje, sin ofrecer entradas inventadas.
 
 ## Narración

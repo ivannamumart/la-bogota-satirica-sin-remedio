@@ -2,7 +2,7 @@
  * Plano compartido con la lámina V04. La geometría es escenográfica, NO cartografía métrica. */
 import * as T from 'three';
 import {paint,solid,pathStroke,seeded,block,cylinder} from './art';
-import {PLACES,NODES,EDGES,DECOR,R,CAP_R,type PlaceId} from '../data/layout';
+import {PLACES,NODES,EDGES,DECOR,R,CAP_R,SPREAD,type PlaceId} from '../data/layout';
 import {buildLandmark,decorativeLandmark,tree,eraVehicle} from './city';
 export {R};
 export type Site={id:PlaceId;name:string;area:string;scene:boolean;x:number;z:number;scale:number;lat:number;lon:number};
@@ -18,23 +18,23 @@ function smooth(a:number,b:number,x:number){const t=T.MathUtils.clamp((x-a)/(b-a
 function baseHeight(x:number,z:number){
  const r=Math.hypot(x,z);
  const sphere=Math.sqrt(Math.max(.6,R*R-r*r));
- const plateau=11.55+.055*Math.sin(z*.25)+.032*Math.sin(x*.43);
+ const plateau=14.42+.055*Math.sin(z*.25)+.032*Math.sin(x*.43);
  // Corona plana hasta r=6.05; la caída se absorbe progresivamente.
- return T.MathUtils.lerp(plateau,sphere,smooth(6.05,CAP_R,r));
+ return T.MathUtils.lerp(plateau,sphere,smooth(7.75,CAP_R,r));
 }
 function mountain(x:number,z:number){
  // Sierra continua al oriente. Se integra en la misma malla del terreno.
- const orient=smooth(4.25,7.3,x);
- const radius=Math.hypot(x,z),falloff=1-smooth(9.45,10.2,radius);
- const ridge=2.05+.57*Math.sin(z*.63+.38)+.22*Math.sin(z*1.57+1.22);
- const mon=2.45*Math.exp(-(((z+2.18)/1.10)**2));
- const gua=1.72*Math.exp(-(((z-1.52)/1.18)**2));
+ const orient=smooth(6.05,10.2,x);
+ const radius=Math.hypot(x,z),falloff=1-smooth(12.9,13.9,radius);
+ const ridge=3.70+.68*Math.sin(z*.63+.38)+.22*Math.sin(z*1.57+1.22);
+ const mon=4.6*Math.exp(-(((z+2.95)/1.50)**2));
+ const gua=3.35*Math.exp(-(((z-2.05)/1.60)**2));
  return Math.max(0,(ridge+mon+gua+.12*Math.sin(z*3.3+x*.55)**2)*orient*falloff);
 }
 export function terrainY(x:number,z:number){
  const r=Math.hypot(x,z);
  const local=.018*Math.sin(x*1.35+z*.3)*Math.cos(z*1.20)+.010*Math.sin(x*2.4-z*1.8);
- let height=baseHeight(x,z)+local*(1-smooth(6.1,9.8,r));
+ let height=baseHeight(x,z)+local*(1-smooth(8.2,13.8,r));
  // La ladera se transforma en montaña sin montajes superpuestos.
  height+=mountain(x,z);
  // Explanadas orgánicas en cada hito: edificaciones enteramente apoyadas.
@@ -70,7 +70,7 @@ function cap(){const segments=196,rings=90,vertices:number[]=[],colors:number[]=
    const clim=mountain(x,z),v=.975+.012*Math.sin(x*5.1+z*3.7)+.010*Math.sin(x*12-z*8);
    const col=green.clone().lerp(ridge,smooth(.20,2.5,clim)*.64).lerp(turf,(Math.sin(x*.36+z*.32)+1)*.13);
    // Cemento mezclado visualmente en el borde, sin materialización de otro hemisferio urbano.
-   col.lerp(warm,smooth(9.40,10.20,rad)*.26);
+   col.lerp(warm,smooth(12.4,13.8,rad)*.26);
    col.multiplyScalar(v);colors.push(col.r,col.g,col.b);
    if(r<rings&&i<segments){const k=r*(segments+1)+i;indices.push(k,k+1,k+segments+1,k+1,k+segments+2,k+segments+1)}
   }
@@ -79,10 +79,10 @@ function cap(){const segments=196,rings=90,vertices:number[]=[],colors:number[]=
  const m=new T.MeshStandardMaterial({vertexColors:true,map:paint('grass').map!,roughness:1,side:T.DoubleSide});const mesh=new T.Mesh(g,m);mesh.receiveShadow=true;return mesh;
 }
 // Topographic isolines restricted to the mountain band; elevation measured above sphere.
-function contourSegments(parent:T.Group){const vertices:number[]=[],xs=5.0,xe=10.0,zs=-7.1,ze=7.1,sz=.14;
+function contourSegments(parent:T.Group){const vertices:number[]=[],xs=7.1,xe=13.8,zs=-9.6,ze=9.6,sz=.18;
  for(const lvl of [.42,.80,1.15,1.55,2.04,2.54,3.14,3.72,4.32,5.02,5.62]){
   for(let x=xs;x<xe;x+=sz)for(let z=zs;z<ze;z+=sz){
-   if(Math.hypot(x,z)>10.1)continue;
+   if(Math.hypot(x,z)>13.75)continue;
    const a=[[x,z],[x+sz,z],[x+sz,z+sz],[x,z+sz]] as [number,number][];
    const h=a.map(([xx,zz])=>mountain(xx,zz));const hits:[number,number][]=[];
    for(let j=0;j<4;j++){
@@ -98,7 +98,7 @@ function contourSegments(parent:T.Group){const vertices:number[]=[],xs=5.0,xe=10
 /** Trazos topográficos de baja intensidad en la corona libre; dialogan con el papel acuarelado. */
 function crownContours(parent:T.Group){
  for(let band=0;band<6;band++){
-   const radius=6.65+band*.61,points:T.Vector3[]=[];
+   const radius=8.3+band*.85,points:T.Vector3[]=[];
    for(let j=0;j<=288;j++){
       const a=j/288*Math.PI*2;
       const rr=radius*(1+.018*Math.sin(a*5.0+band*.24)+.009*Math.sin(a*11.0+band));
@@ -151,10 +151,10 @@ function vegetation(world:T.Group){const rand=seeded(1972),spots:[number,number,
  [-3.55,2.85,1.1],[-2.3,-3.1,1.2],[-1.15,-.2,1.25],[1.55,-2.95,1.22],
  [3.25,-6.35,1.32],[2.9,6.15,1.15],[-2.95,6.35,1.25],[4.9,5.75,1.12]
  ];
- for(const [x,z,s] of spots){const t=tree('urban',s);t.position.copy(terrain(x,z,.08));world.add(t)}
+ for(const [x,z,s] of spots){const t=tree('urban',s);t.position.copy(terrain(x*SPREAD,z*SPREAD,.08));world.add(t)}
  // Vegetación andina sobre los cerros, sin pinos: follaje irregular, no bosque navideño.
  for(let i=0;i<42;i++){
-  const x=5.5+rand()*3.5,z=-6.1+rand()*12.2;if(Math.hypot(x,z)>9.55||PLACES.some(p=>p.scene&&Math.hypot(x-p.x,z-p.z)<2.0))continue;
+  const x=7.8+rand()*4.3,z=-8.2+rand()*16.4;if(Math.hypot(x,z)>13.0||PLACES.some(p=>p.scene&&Math.hypot(x-p.x,z-p.z)<2.0))continue;
   const s=.43+rand()*.74,t=tree('cerro',s);t.position.copy(terrain(x,z,.07));world.add(t)
  }
 }
@@ -165,7 +165,7 @@ function chapel(world:T.Group,x:number,z:number,scale:number){const g=new T.Grou
 }
 function vehicles(world:T.Group){
  const points:[number,number,'bus'|'taxi',number][]=[[-4.95,5.14,'bus',.07],[-1.85,5.18,'taxi',.15],[2.45,5.15,'taxi',-.12],[1.30,-3.85,'bus',Math.PI/2]];
- points.forEach(([x,z,type,angle])=>{const v=eraVehicle(type);v.position.copy(terrain(x,z,.18));v.rotation.y=angle;v.scale.setScalar(type==='bus'?.88:.88);v.name='vehiculo_'+type+'_'+x+'_'+z;world.add(v)})
+ points.forEach(([x,z,type,angle])=>{const v=eraVehicle(type);v.position.copy(terrain(x*SPREAD,z*SPREAD,.18));v.rotation.y=angle;v.scale.setScalar(type==='bus'?.88:.88);v.name='vehiculo_'+type+'_'+x+'_'+z;world.add(v)})
 }
 export function createPlanet(){
  const world=new T.Group();world.name='bogota_satira_corona_superior';world.add(texturedGraySphere());world.add(cap());contourSegments(world);crownContours(world);
@@ -174,13 +174,13 @@ export function createPlanet(){
  const buildings=new Map<PlaceId,T.Group>();
  for(const p of PLACES){if(p.id==='cerros')continue;
   const g=buildLandmark(p.id),entry=NODES.find(n=>n.entry===p.id);
-  g.position.copy(terrain(p.x,p.z,.02));const dx=(entry?.x??p.x)-(p.x),dz=(entry?.z??p.z)-(p.z);g.rotation.y=Math.atan2(dx,dz);g.scale.setScalar(p.scale*.85);
+  g.position.copy(terrain(p.x,p.z,.02));const dx=(entry?.x??p.x)-(p.x),dz=(entry?.z??p.z)-(p.z);g.rotation.y=Math.atan2(dx,dz);g.scale.setScalar(p.scale*.94);
   // La capilla, el club y las viviendas tienen materialidad de región, no zócalos enormes.
   world.add(g);buildings.set(p.id,g);
  }
  for(const d of DECOR){const g=decorativeLandmark(d.id);g.position.copy(terrain(d.x,d.z,.05));g.scale.setScalar(d.id==='plaza_toros'?.62:d.id==='torres_parque'?.59:.58);world.add(g)}
  // Hitos de cima: Monserrate y Guadalupe, observados de lejos.
- chapel(world,7.42,-2.18,1.07);chapel(world,7.72,1.65,.86);
+ chapel(world,10.35,-2.95,1.15);chapel(world,10.65,2.15,.93);
  vegetation(world);vehicles(world);
  return {world,routes,buildings,sites:SITES,nodes:NODES};
 }
