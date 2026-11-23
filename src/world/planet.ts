@@ -47,7 +47,7 @@ function makeTrack(from:number,to:number,index:number){const a=dir(SITES[from].l
  for(let i=0;i<points.length;i++){
   if(i>0){total+=points[i].distanceTo(points[i-1]);lengths.push(total)}
   const f=points[Math.min(i+1,points.length-1)].clone().sub(points[Math.max(0,i-1)]).normalize();const side=new T.Vector3().crossVectors(normals[i],f).normalize();
-  const w=(.30+.025*Math.sin(i*.16))*(from===3?.97:1);widths.push(w);
+  const w=(.65+.035*Math.sin(i*.16))*(from===3?.97:1);widths.push(w);
   for(let k of [-1,1]){const p=points[i].clone().addScaledVector(side,w*k*.5);verts.push(p.x,p.y,p.z)}
   if(i<points.length-1){const t=i*2;tri.push(t,t+2,t+1,t+1,t+2,t+3)}
  }
@@ -88,18 +88,38 @@ function addContourLines(world:T.Group){const linesMat=new T.LineBasicMaterial({
   }
  }
 }
-function scatterVegetation(world:T.Group){const rng=seeded(826);const foliage=new T.Group();
- // Estratificación: bosques densos sobre los cerros y arbolado pequeño en los corredores.
- for(let i=0;i<235;i++){
-  const zz=rng()*2-1,aa=rng()*Math.PI*2,n=new T.Vector3(Math.sqrt(1-zz*zz)*Math.sin(aa),zz,Math.sqrt(1-zz*zz)*Math.cos(aa));
-  const mountain=PEAKS.some(p=>angular(n,p.n)<.45),nearTown=SITES.filter(s=>s.scene).some(s=>angular(n,dir(s.lat,s.lon))<.16);
-  if(nearTown||(!mountain&&rng()<.64))continue;
-  const height=mountain?.47+rng()*.72:.23+rng()*.27;
-  const group=tree(mountain?'pine':rng()>.55?'leaf':'cypress',height);
-  group.position.copy(ground(n,.015));group.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),n);
-  foliage.add(group);
+function scatterVegetation(world:T.Group){
+ // Bosque por instancias: preserva volumen con muy pocas llamadas a la GPU.
+ const rng=seeded(826), max=250;
+ const trunks=new T.InstancedMesh(new T.CylinderGeometry(.055,.072,.61,7),paint('cedar'),max);
+ const layers=[0,1,2].map((i)=>new T.InstancedMesh(new T.ConeGeometry(.33-i*.055,.52,7),paint(i===1?'moss':'pine'),max));
+ const broadleaf=new T.InstancedMesh(new T.IcosahedronGeometry(.38,1),paint('olive'),max);
+ const trunksBroad=new T.InstancedMesh(new T.CylinderGeometry(.055,.072,.61,7),paint('cedar'),max);
+ const obj=new T.Object3D();const up=new T.Vector3(0,1,0);
+ let pineCount=0,broadCount=0;
+ for(let j=0;j<1800&&(pineCount+broadCount)<max;j++){
+   const zz=rng()*2-1,aa=rng()*Math.PI*2;
+   const n=new T.Vector3(Math.sqrt(1-zz*zz)*Math.sin(aa),zz,Math.sqrt(1-zz*zz)*Math.cos(aa));
+   const mountain=PEAKS.some(p=>angular(n,p.n)<.48);
+   const nearTown=SITES.filter(s=>s.scene).some(s=>angular(n,dir(s.lat,s.lon))<.15);
+   if(nearTown||(!mountain&&rng()<.77))continue;
+   const h=mountain?.45+rng()*.78:.26+rng()*.39;
+   const start=ground(n,.015),quat=new T.Quaternion().setFromUnitVectors(up,n),isPine=mountain||rng()>.43;
+   const set=(mesh:T.InstancedMesh,index:number,pos:T.Vector3,scale:T.Vector3)=>{
+     obj.position.copy(pos);obj.quaternion.copy(quat);obj.scale.copy(scale);obj.updateMatrix();mesh.setMatrixAt(index,obj.matrix);
+   };
+   const ix=isPine?pineCount:broadCount;
+   set(isPine?trunks:trunksBroad,ix,start.clone().addScaledVector(n,h*.31),new T.Vector3(h,h,h));
+   if(isPine){for(let k=0;k<3;k++){
+     set(layers[k],ix,start.clone().addScaledVector(n,h*(.45+k*.18)),new T.Vector3(h,h,h));
+   }pineCount++;}
+   else {set(broadleaf,ix,start.clone().addScaledVector(n,h*.84),new T.Vector3(h*.97,h*.80,h*.95));broadCount++;}
  }
- world.add(foliage);
+
+ layers.forEach(m=>{m.count=pineCount;m.instanceMatrix.needsUpdate=true;m.castShadow=true;world.add(m)});
+ broadleaf.count=broadCount;broadleaf.instanceMatrix.needsUpdate=true;broadleaf.castShadow=true;world.add(broadleaf);
+ trunks.count=pineCount;trunks.instanceMatrix.needsUpdate=true;trunks.castShadow=true;world.add(trunks);
+ trunksBroad.count=broadCount;trunksBroad.instanceMatrix.needsUpdate=true;trunksBroad.castShadow=true;world.add(trunksBroad);
 }
 export interface WorldData{world:T.Group;routes:Track[];buildings:Map<PlaceId,T.Group>;sites:Site[];}
 export function createPlanet():WorldData{

@@ -12,10 +12,18 @@ export function character(style:PersonaStyle='npc',scale=1):Person{
  const pant=style==='escobar'?paint('charcoal',0x92938c):paint('charcoal',0x74695f);
  const body=new T.Group();root.add(body);
  // Sobrecapas y cintura para una silueta humana reconocible desde la cámara de tercera persona.
- const torso=sphere(body,.43,cloth,0,1.13,0,2);torso.scale.set(.72,1.12,.48);
+ const torso=sphere(body,.43,cloth,0,1.12,0,2);torso.scale.set(.64,1.03,.46);
  const waist=sphere(body,.29,cloth,0,.86,0,1);waist.scale.set(1,.55,.75);
  if(woman&&style!=='beatriz'){const skirt=cone(body,.37,.69,cloth,0,.67,0,12);skirt.scale.set(1,1,.8)}
  else {const shirt=block(body,.11,.36,.07,white,0,1.18,.22);shirt.rotation.z=.01;block(body,.04,.15,.075,style==='escobar'?solid(0x493d37):solid(0x695f58),0,1.24,.28)}
+ if(style==='escobar'){
+   for(const sx of [-1,1]){
+     const seam=block(body,.018,.43,.022,paint('slate',0x878f88),sx*.20,1.0,.19);
+     seam.rotation.z=sx*.08;
+     block(body,.12,.022,.025,paint('plaster',0xd6d1bd),sx*.16,1.02,.235);
+   }
+   for(let i=0;i<3;i++)sphere(body,.012,paint('charcoal'),.06,1.07+i*.095,.260,0);
+ }
  if(style==='escobar'||style==='focion'||style==='federico'){
    const lapelA=block(body,.17,.36,.05,style==='federico'?dark:cloth,-.13,1.23,.23);lapelA.rotation.z=-.32;
    const lapelB=block(body,.17,.36,.05,style==='federico'?dark:cloth,.13,1.23,.23);lapelB.rotation.z=.32;
@@ -23,18 +31,18 @@ export function character(style:PersonaStyle='npc',scale=1):Person{
  }
  // Brazos segmentados: pivote verdadero para gestos, caminar, escribir o bailar.
  const mkArm=(side:number)=>{const a=new T.Group();a.position.set(side*.32,1.35,0);root.add(a);
- const sleeve=sphere(a,.19,cloth,0,-.21,0,1);sleeve.scale.set(.70,1.75,.70);
+ const sleeve=sphere(a,.17,cloth,0,-.21,0,1);sleeve.scale.set(.58,1.76,.68);
  const cuff=cylinder(a,.095,.20,cloth,0,-.53,.005,9);
  sphere(a,.087,skin,0,-.68,.012,1);return a;};
  const leftArm=mkArm(-1),rightArm=mkArm(1);
  const mkLeg=(side:number)=>{const a=new T.Group();a.position.set(side*.15,.80,0);root.add(a);
- const l=sphere(a,.20,pant,0,-.30,0,1);l.scale.set(.65,2.0,.76);
+ const l=sphere(a,.17,pant,0,-.30,0,1);l.scale.set(.69,2.15,.71);
  const calf=cylinder(a,.105,.31,pant,0,-.60,0,10);
  const shoe=sphere(a,.14,style==='inga'?skin:dark,0,-.76,.08,1);shoe.scale.set(.85,.44,1.40);return a;};
  const leftLeg=mkLeg(-1),rightLeg=mkLeg(1);
  const neck=cylinder(root,.108,.16,skin,0,1.52,.01,11);
- const head=new T.Group();head.position.set(0,1.63,0);root.add(head);
- const face=sphere(head,.255,skin,0,.06,0,2);face.scale.set(.78,1.1,.78);
+ const head=new T.Group();head.position.set(0,1.58,0);root.add(head);
+ const face=sphere(head,.222,skin,0,.06,0,2);face.scale.set(.84,1.03,.83);
  sphere(head,.052,skin,0,-.015,.212,1).scale.set(.75,1.15,1.3); // nariz
  for(const s of [-1,1]){
    sphere(head,.022,eye,s*.098,.083,.206,1);
@@ -44,12 +52,12 @@ export function character(style:PersonaStyle='npc',scale=1):Person{
  // Boca discreta, sin sonrisa rígida de muñeco.
  pathStroke(head,[new T.Vector3(-.061,-.104,.184),new T.Vector3(0,-.11,.202),new T.Vector3(.061,-.104,.184)],0x64413c,.008);
  const hair=style==='inga'?paint('ochre',0xc5af7b):older?paint('slate',0xc3c3b2):style==='fina'?paint('cedar',0x66504a):haircolor;
- const cap=sphere(head,.245,hair,0,.255,-.026,2);cap.scale.set(.84,.49,.83);
+ const cap=sphere(head,.216,hair,0,.249,-.026,2);cap.scale.set(.91,.47,.90);
  for(let i=0;i<5;i++){
    const t=i/4,off=-.16+t*.32;
-   sphere(head,.085,hair,off,.22+.023*Math.sin(t*8),.145,1).scale.set(1,.45,1.05);
+   sphere(head,.072,hair,off,.225+.017*Math.sin(t*8),.136,1).scale.set(1,.45,1.05);
  }
- if(woman){for(const s of [-1,1]){const lock=sphere(head,.115,hair,s*.19,-.13,-.02,1);lock.scale.set(.70,2.0,.75)}}
+ if(woman){for(const s of [-1,1]){const lock=sphere(head,.103,hair,s*.18,-.14,-.02,1);lock.scale.set(.70,2.0,.75)}}
  if(style==='federico'||style==='diego'||style==='poeta'){
    const beard=sphere(head,.17,paint('charcoal',0x6f5a50),0,-.12,.06,1);beard.scale.set(.75,.42,.9);
  }

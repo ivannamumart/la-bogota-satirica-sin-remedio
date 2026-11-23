@@ -150,11 +150,29 @@ function kiosk(){const g=new T.Group();block(g,.75,1.10,.55,paint('cedar'),0,.56
 export function makeLandmark(id:PlaceId){
  const root=new T.Group();root.name=`lugar_${id}`;
  // El volumen del edificio se integra en un pequeño basamento de curvas suaves.
- const base=paint('grass',id==='cementerio'?0xa2a4a0:id==='jockey'?0xcfc3a7:0xe5e6d5);
- const soil=cylinder(root,2.00,.16,base,0,-.12,-.25,48);soil.scale.z=.87;
+ // Basamento orgánico de topografía local: se funde con la curvatura del globo.
+ const ringCount=7, segments=56, vertices:number[]=[],indexes:number[]=[],colors:number[]=[];
+ const coreColor=new T.Color(id==='cementerio'?0x979b91:id==='jockey'?0xbeb49b:id==='unicornio'?0xb9b0ab:0xa5ae91);
+ const edgeColor=new T.Color(0x9ba68c);
+ for(let ring=0;ring<=ringCount;ring++){
+  const r=.10+ring/ringCount*2.75;
+  for(let j=0;j<=segments;j++){
+   const theta=j/segments*Math.PI*2;
+   const ripple=1+.038*Math.sin(3*theta+ring*.3)+.025*Math.cos(7*theta);
+   const x=Math.cos(theta)*r*ripple,z=Math.sin(theta)*r*.88*ripple-.25;
+   const y=.075*Math.exp(-r*r*.40)-(x*x+(z+.25)*(z+.25))/(2*11.8)-.01;
+   vertices.push(x,y,z);
+   const c=coreColor.clone().lerp(edgeColor,Math.pow(r/2.85,1.55));colors.push(c.r,c.g,c.b);
+   if(ring<ringCount&&j<segments){let a=ring*(segments+1)+j,b=a+segments+1;indexes.push(a,b,a+1,a+1,b,b+1)}
+  }
+ }
+ const soilGeo=new T.BufferGeometry();soilGeo.setAttribute('position',new T.Float32BufferAttribute(vertices,3));soilGeo.setAttribute('color',new T.Float32BufferAttribute(colors,3));soilGeo.setIndex(indexes);soilGeo.computeVertexNormals();
+ const soil=new T.Mesh(soilGeo,new T.MeshStandardMaterial({map:paint('grass').map!,vertexColors:true,roughness:1,side:T.DoubleSide}));soil.receiveShadow=true;root.add(soil);
  for(let r=0;r<3;r++){
-   const pts=[];for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;const f=1+Math.sin(a*3+r*.8)*.08;pts.push(new T.Vector3(Math.cos(a)*(1.4+r*.23)*f,-.02+r*.004,Math.sin(a)*(1.12+r*.20)*f-.25));}
-   pathStroke(root,pts,0x697467,.011,.35);
+   const pts=[];const rad=1.55+r*.34;
+   for(let i=0;i<=72;i++){const a=i/72*Math.PI*2,rr=rad*(1+.04*Math.sin(a*4+r));const x=Math.cos(a)*rr,z=Math.sin(a)*rr*.88-.25;
+      const y=.075*Math.exp(-rr*rr*.4)-rr*rr/(2*11.8)+.015;pts.push(new T.Vector3(x,y,z));}
+   pathStroke(root,pts,0x566a58,.008,.21);
  }
  const g=new T.Group();g.position.z=-.66;root.add(g);
  switch(id){

@@ -14,20 +14,20 @@ const el=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById
 const mount=el<HTMLDivElement>('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),
  decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about');
 const scene=new T.Scene();
-const camera=new T.PerspectiveCamera(38,window.innerWidth/window.innerHeight,.10,260);
-camera.position.set(0,11.1,40.5);camera.lookAt(0,0,0);
+const camera=new T.PerspectiveCamera(43,window.innerWidth/window.innerHeight,.10,260);
+camera.position.set(0,7.3,51.8);camera.lookAt(0,0,0);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.55));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.20));
 renderer.setClearColor(0xffffff,0);
 renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+renderer.shadowMap.enabled=false;renderer.shadowMap.type=T.PCFSoftShadowMap;
 mount.appendChild(renderer.domElement);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.055;orbit.enablePan=false;
-orbit.minDistance=24;orbit.maxDistance=59;orbit.minPolarAngle=.18;orbit.maxPolarAngle=Math.PI-.15;orbit.rotateSpeed=.48;
+orbit.minDistance=29;orbit.maxDistance=66;orbit.minPolarAngle=.18;orbit.maxPolarAngle=Math.PI-.15;orbit.rotateSpeed=.48;
 orbit.autoRotate=true;orbit.autoRotateSpeed=.20;
 const sky=new T.HemisphereLight(0xe7eeea,0x6a6c66,1.55);scene.add(sky);
-const sun=new T.DirectionalLight(0xffe6c6,2.90);sun.position.set(27,31,22);sun.castShadow=true;
+const sun=new T.DirectionalLight(0xffe6c6,2.90);sun.position.set(27,31,22);sun.castShadow=false;
 sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-31;sun.shadow.camera.right=31;sun.shadow.camera.top=31;sun.shadow.camera.bottom=-31;
 sun.shadow.camera.near=.5;sun.shadow.camera.far=94;sun.shadow.bias=-.00045;scene.add(sun);
 const bounce=new T.DirectionalLight(0x97c3ca,.65);bounce.position.set(-17,4,-20);scene.add(bounce);
@@ -48,6 +48,7 @@ const input=new Set<string>();let mobileForward=0,mobileSide=0,touchStart: {x:nu
 const keyset=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift','escape','1','2','3','n'];
 const getKey=(...keys:string[])=>keys.some(k=>input.has(k));
 const originalActorPos=new WeakMap<Person,T.Vector3>();
+const originalActorRot=new WeakMap<Person,number>();
 let lastHeroPos=new T.Vector3(),lastHeroDir=new T.Vector3(0,0,1),lastNormal=new T.Vector3(0,1,0);
 const classToggle=(node:HTMLElement,name:string,on:boolean)=>node.classList.toggle(name,on);
 function updateHero(){
@@ -124,7 +125,7 @@ function enter(site:Site){if(lock||mode==='interior')return;
   currentSite=site;stage=makeStage(site.id);stage.root.name=`microrelato_${site.id}`;
   scene.add(stage.root);world.visible=false;world.remove(hero.root);scene.add(hero.root);
   hero.root.quaternion.identity();hero.root.rotation.y=Math.PI;hero.root.scale.setScalar(1.06);hero.root.position.copy(stage.heroStart);
-  stage.actors.forEach((a,i)=>originalActorPos.set(a,a.root.position.clone()));
+  stage.actors.forEach(a=>{originalActorPos.set(a,a.root.position.clone());originalActorRot.set(a,a.root.rotation.y);});
   labelFor(SITES.indexOf(site));classToggle(caption,'visible',true);
   orbit.enabled=false;orbit.autoRotate=false;camera.up.set(0,1,0);
   camera.position.set(1.0,3.4,10.7);camera.lookAt(0,1.5,-1.4);
@@ -137,7 +138,7 @@ function leave(){if(!stage||lock)return;
   scene.remove(stage!.root);stage=null;currentSite=null;scene.remove(hero.root);
   world.visible=true;world.add(hero.root);hero.root.scale.setScalar(.45);updateHero();
   mode='walk';ignoreEntryUntil=performance.now()+4000;showCaption(null);hideChoices();classToggle(hint,'visible',false);
-  camera.position.copy(lastHeroPos).addScaledVector(lastNormal,2.2).addScaledVector(lastHeroDir,-5.0);
+  camera.position.copy(lastHeroPos).addScaledVector(lastNormal,5.6).addScaledVector(lastHeroDir,-6.5);
   camera.up.copy(lastNormal);camera.lookAt(lastHeroPos.clone().addScaledVector(lastNormal,.65));
  });
 }
@@ -170,21 +171,52 @@ function updateInterior(dt:number,t:number){if(!stage||!currentSite)return;
    if(index>=seq.length)onScenePhase('complete');
    else if(index!==currentLine){currentLine=index;showCaption(seq[index]);}
  }
+ // Coreografía específica: la escena evoluciona incluso cuando no se está leyendo texto.
  stage.actors.forEach((actor,i)=>{
-  const initial=originalActorPos.get(actor);
-  if(initial){actor.root.position.copy(initial);
-    actor.root.position.x+=Math.sin(t*.8+i*2.4)*.045;
-    actor.root.rotation.y+=Math.sin(t*.21+i*3)*.002;
-  }
-  actor.update(t,false,(phase==='canonical'&&i===currentLine%stage!.actors.length)?1.35:1);
+  const original=originalActorPos.get(actor);
+  if(!original)return;
+  actor.root.position.copy(original);
+  let moving=false,angle=originalActorRot.get(actor)??0;
+  if(currentSite?.id==='apartamento'&&i===0){
+    actor.root.position.x+=Math.sin(t*.54)*.68;
+    actor.root.position.z+=Math.sin(t*.54+.8)*.32;
+    moving=Math.abs(Math.cos(t*.54))>.45;
+    angle=-Math.sin(t*.54)*.56-.64;
+  }else if(currentSite?.id==='taller'){
+    if(i===0){angle=.36+.12*Math.sin(t*1.15);actor.root.position.z+=.14*Math.sin(t*.6)}
+    if(i===1){angle=.85+.24*Math.sin(t*.8)}
+  }else if(currentSite?.id==='unicornio'&&i===0){
+    actor.root.position.x+=Math.sin(t*.90)*.80;
+    actor.root.position.z+=Math.cos(t*.90)*.56;
+    actor.root.rotation.z=.065*Math.sin(t*1.90);
+    angle=Math.sin(t*.90)*1.1;
+    moving=true;
+  }else if(currentSite?.id==='oasis'){
+    angle+=.12*Math.sin(t*.7+i);
+    if(i===1)actor.root.position.x+=Math.sin(t*.53)*.25;
+  }else if(currentSite?.id==='parque'&&i===0){
+    actor.root.position.x+=Math.sin(t*.48)*.68;
+    actor.root.position.z+=Math.cos(t*.48)*.35;
+    moving=Math.abs(Math.cos(t*.48))>.3;
+  }else if(currentSite?.id==='septima'){
+    actor.root.position.z+=Math.sin(t*.46+i*1.9)*.75;
+    moving=Math.abs(Math.cos(t*.46+i*1.9))>.4;
+  }else if(currentSite?.id==='casa_familiar'&&i===2){
+    actor.root.position.x+=Math.sin(t*.38)*.4;
+    angle+=.18*Math.sin(t*.8);
+  }else{angle+=.08*Math.sin(t*.39+i*2)}
+  actor.root.rotation.y=angle;
+  const currentVoice=speaker.textContent?.toLocaleLowerCase('es')??'';
+  const isSpeaker=currentVoice.includes(actor.style==='leonor'?'madre':actor.style==='poeta'?'edén':actor.style);
+  actor.update(t,moving,isSpeaker?1.8:1);
  });
 }
 function followCamera(dt:number,t:number){
  if(mode==='overview'){orbit.update();return;}
  if(mode==='walk'){
   const p=lastHeroPos.clone(),normal=lastNormal.clone();
-  const desired=p.addScaledVector(normal,2.25).addScaledVector(lastHeroDir,-4.45);
-  const gaze=lastHeroPos.clone().addScaledVector(normal,.75).addScaledVector(lastHeroDir,1.32);
+  const desired=p.addScaledVector(normal,5.6).addScaledVector(lastHeroDir,-6.5);
+  const gaze=lastHeroPos.clone().addScaledVector(normal,.85).addScaledVector(lastHeroDir,1.5);
   camera.position.lerp(desired,1-Math.exp(-dt*2.8));
   camera.up.lerp(normal,1-Math.exp(-dt*3.1)).normalize();camera.lookAt(gaze);
  }else if(mode==='interior'&&stage){
@@ -198,23 +230,24 @@ function followCamera(dt:number,t:number){
 }
 function toOverview(){if(mode==='interior'){leave();return;}
  mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.set(0,0,0);
- camera.up.set(0,1,0);camera.position.set(0,11.1,40.5);camera.lookAt(0,0,0);orbit.update();classToggle(caption,'visible',false);
+ camera.up.set(0,1,0);camera.position.set(0,7.3,51.8);camera.lookAt(0,0,0);orbit.update();classToggle(caption,'visible',false);
 }
 function beginWalking(){if(mode!=='overview')return;mode='walk';orbit.enabled=false;orbit.autoRotate=false;
- camera.up.copy(lastNormal);classToggle(caption,'visible',false);
+ camera.position.copy(lastHeroPos).addScaledVector(lastNormal,5.6).addScaledVector(lastHeroDir,-6.5);
+ camera.up.copy(lastNormal);camera.lookAt(lastHeroPos.clone().addScaledVector(lastNormal,.90));classToggle(caption,'visible',false);
 }
 // Momento del día: un ciclo completo cada cinco minutos, sin controles que ensucien la pantalla.
 function dayNight(dt:number){timeOfDay+=dt;const phase=(timeOfDay%300)/300;
  const altitude=Math.sin(phase*2*Math.PI+.1),daylight=T.MathUtils.smoothstep(altitude,-.25,.60);
  sun.position.set(Math.cos(phase*2*Math.PI)*29,30*altitude,Math.sin(phase*2*Math.PI)*29);
- sun.intensity=.27+3.0*daylight;
+ sun.intensity=.65+2.30*daylight;
  sun.color.setRGB(1,.78+.20*daylight,.61+.34*daylight);
- sky.intensity=.25+1.34*daylight;bounce.intensity=.23+.52*daylight;
+ sky.intensity=.86+.72*daylight;bounce.intensity=.72+.24*daylight;
  starMat.opacity=Math.pow(1-daylight,2)*.83;
- const dayTop=new T.Color(0xdde9e3),nightTop=new T.Color(0x122439),dayBottom=new T.Color(0xf2e6d8),nightBottom=new T.Color(0x293646);
+ const dayTop=new T.Color(0xdde9e3),nightTop=new T.Color(0x25344d),dayBottom=new T.Color(0xf2e6d8),nightBottom=new T.Color(0x3d4d59);
  const top=nightTop.lerp(dayTop,daylight),bottom=nightBottom.lerp(dayBottom,daylight);
  document.documentElement.style.setProperty('--sky-top','#'+top.getHexString());document.documentElement.style.setProperty('--sky-bottom','#'+bottom.getHexString());
- renderer.toneMappingExposure=.80+daylight*.30;
+ renderer.toneMappingExposure=1.0+daylight*.13;
  document.body.classList.toggle('night',daylight<.25);
 }
 let last=performance.now();let elapsed=0;
@@ -229,7 +262,7 @@ function tick(now:number){requestAnimationFrame(tick);
  renderer.render(scene,camera);
 }
 window.addEventListener('resize',()=>{
- camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.55));
+ camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.20));
 });
 window.addEventListener('keydown',(event)=>{
  const key=event.key.toLowerCase();if(keyset.includes(key))event.preventDefault();input.add(key);

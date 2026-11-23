@@ -27,20 +27,40 @@ try {
   await page.waitForFunction(()=>window.__BOGOTA_TEST__.getState().mode==='interior',{timeout:15000});
   await page.waitForTimeout(5500);
   await page.screenshot({path:'docs/qa/03-apartamento.png'});
+  await page.keyboard.press('Space');
+  for(let i=0;i<4;i++){await page.keyboard.press('Space');await page.waitForTimeout(150)}
+  await page.waitForFunction(()=>window.__BOGOTA_TEST__.getState().phase==='choice',{timeout:12000});
+  await page.screenshot({path:'docs/qa/03b-alternativas.png'});
+  await page.keyboard.press('1');await page.waitForTimeout(350);
+  if((await page.evaluate(()=>window.__BOGOTA_TEST__.getState().phase))!=='branch')throw Error('La elección no inicia una rama narrativa');
   result.steps.push({step:'interior',state:await page.evaluate(()=>window.__BOGOTA_TEST__.getState())});
   await page.click('#moon');await page.waitForTimeout(1100);
   if(!(await page.locator('#about').evaluate(e=>e.classList.contains('open'))))throw Error('La luna no abrió Sobre el proyecto');
+  const aboutOnTop=await page.evaluate(()=>!!document.elementFromPoint(window.innerWidth/2,window.innerHeight/2)?.closest('#about'));
+  if(!aboutOnTop)throw Error('El panel blanco y negro no ocupa realmente la pantalla');
   await page.screenshot({path:'docs/qa/04-sobre.png'});
   await page.click('#about-close');
   await page.waitForTimeout(1000);
   await page.evaluate(()=>window.__BOGOTA_TEST__.jumpDay());
   await page.waitForTimeout(700);
   await page.screenshot({path:'docs/qa/05-tarde.png'});
-  await page.keyboard.press('Escape');await page.waitForTimeout(1700);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>window.__BOGOTA_TEST__.getState().mode==='walk',{timeout:15000});
+  await page.click('#center');await page.waitForTimeout(1200);
   await page.evaluate(()=>window.__BOGOTA_TEST__.jumpDay());
   await page.waitForTimeout(800);
   await page.screenshot({path:'docs/qa/06-noche.png'});
   result.steps.push({step:'ciclo',state:await page.evaluate(()=>window.__BOGOTA_TEST__.getState())});
+  for(const [id,shot] of [['unicornio','07-unicornio.png'],['porciuncula','08-porciuncula.png'],['cementerio','09-cementerio.png']]){
+    await page.evaluate(id=>window.__BOGOTA_TEST__.enterSite(id),id);
+    await page.waitForFunction(()=>window.__BOGOTA_TEST__.getState().mode==='interior',{timeout:15000});
+    await page.waitForTimeout(1600);
+    await page.screenshot({path:'docs/qa/'+shot});
+    result.steps.push({step:id,state:await page.evaluate(()=>window.__BOGOTA_TEST__.getState())});
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>window.__BOGOTA_TEST__.getState().mode==='walk',{timeout:15000});
+    await page.waitForTimeout(750);
+  }
   if(errors.length)throw Error(errors.join('\n'));
   result.success=true;
 } catch(e){result.errors=[...errors,String(e)];await page.screenshot({path:'docs/qa/ERROR.png'}).catch(()=>{})}

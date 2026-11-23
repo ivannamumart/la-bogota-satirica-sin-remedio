@@ -99,7 +99,7 @@ function actor(stage:Stage,style:PersonaStyle,x:number,z:number,rot=0,scale=1){c
 function decorTrees(g:T.Group,count=11){for(let i=0;i<count;i++){const t=tree(i%3?'leaf':'pine',1.25+rng()*.68);t.position.set((rng()-.5)*10,0,(rng()-.5)*8.5);g.add(t)}}
 function baseStage(id:PlaceId):Stage{const root=new T.Group();root.name=`escena_${id}`;
  root.add(new T.HemisphereLight(0xe8ebdb,0x6c6f63,1.25));
- const key=new T.DirectionalLight(id==='unicornio'?0xd0bbef:id==='cementerio'?0xd4e2ed:0xffe0ba,2.7);key.position.set(-5,9,7);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-11;key.shadow.camera.right=11;key.shadow.camera.top=10;key.shadow.camera.bottom=-10;root.add(key);
+ const key=new T.DirectionalLight(id==='unicornio'?0xd0bbef:id==='cementerio'?0xd4e2ed:0xffe0ba,2.7);key.position.set(-5,9,7);key.castShadow=false;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-11;key.shadow.camera.right=11;key.shadow.camera.top=10;key.shadow.camera.bottom=-10;root.add(key);
  const rim=new T.DirectionalLight(0x9eb9bf,1.15);rim.position.set(5,6,-6);root.add(rim);
  return {root,actors:[],heroStart:new T.Vector3(0,0,3.88),exitZ:4.50,name:id};}
 export function makeStage(id:PlaceId):Stage{
@@ -128,7 +128,7 @@ export function makeStage(id:PlaceId):Stage{
    block(g,2.8,1.66,.08,paint('wood'),0,2.74,-5.32);
    block(g,2.68,1.50,.081,paint('bluegray',0xb3c7c6),0,2.75,-5.25);
    for(let k=0;k<7;k++){const pts=[];for(let j=0;j<=28;j++){const x=-1.29+2.58*j/28;const y=2.23+k*.11+.17*Math.sin(j*.13+k*.7);pts.push(new T.Vector3(x,y,-5.17));}pathStroke(g,pts,k%2?0x62816a:0x365a4c,.018)}
-   lampPendant(g,-2,1.2);actor(s,'fina',1.7,-2.95,-.85);
+   lampPendant(g,-2,1.2);actor(s,'fina',4.12,-1.65,-.85);
  }else if(id==='taller'){
    rug(g,0,-1,6.7,5,'warm');fireplace(g,0,-5.06);frame(g,0,3.20,-5.32,1.30,.96,1);
    for(let i=0;i<4;i++)frame(g,-4.2+i*2.7,2.55,-5.32,1.08,1.16,i);
