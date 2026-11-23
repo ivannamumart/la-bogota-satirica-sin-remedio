@@ -1,4 +1,4 @@
-/** LA BOGOTÁ SATÍRICA DE SIN REMEDIO · V06
+/** LA BOGOTÁ SATÍRICA DE SIN REMEDIO · V08
  * Cartografía especulativa de Bogotá, 1972. Modelo de esfera con ciudad únicamente arriba.
  * Navegación por red vial, entrada automática al alcanzar el umbral; microescenas 3D.
  */
@@ -12,7 +12,7 @@ import {DIALOGOS,CONTEXTOS} from './story/expanded';
 import type {Linea} from './story/dialogues';
 import './ui/styles.css';
 const el=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
-const mount=el('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about'),roadHint=el('road-hint');
+const mount=el('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),stageAside=el('stage-aside'),stageAsideText=el('stage-aside-text'),decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about'),roadHint=el('road-hint');
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(35,window.innerWidth/window.innerHeight,.10,260);
 const targetOverview=new T.Vector3(0,4.8,0);
 camera.position.set(-10,43,40);camera.lookAt(targetOverview);
@@ -65,8 +65,8 @@ function walkingShot(){
  // Cámara de tercer persona a escala humana, nunca un vuelo sobre los tejados.
  const f=lastHeroDir.clone().setY(0).normalize();
  const side=new T.Vector3(-f.z,0,f.x);
- const focus=lastHeroPos.clone().addScaledVector(f,.70).add(new T.Vector3(0,1.13,0));
- const origin=lastHeroPos.clone().addScaledVector(f,-4.70).add(new T.Vector3(0,2.80,0));
+ const focus=lastHeroPos.clone().addScaledVector(f,1.0).add(new T.Vector3(0,1.22,0));
+ const origin=lastHeroPos.clone().addScaledVector(f,-5.45).add(new T.Vector3(0,3.65,0));
  const options=[
   origin.clone().addScaledVector(side,1.45),
   origin.clone().addScaledVector(side,-1.45),
@@ -102,9 +102,9 @@ const routeAt=(track:Track,d:number,dir:1|-1)=>{const s=interpolateTrack(track,d
 function positionHero(dt=.016,motionSign=1){
  const s=routeAt(track,distance,direction);const sideways=new T.Vector3(-s.forward.z,0,s.forward.x);
  // Escobar camina por un lateral de la calzada, sin atravesar la fila de autobuses.
- const sideWalk=track.kind==='septima'||track.kind==='veintiseis'?.47:track.kind==='barrio'?.29:.055;
+ const sideWalk=track.kind==='septima'||track.kind==='veintiseis'?.30:track.kind==='barrio'?.22:.035;
  lateral=T.MathUtils.damp(lateral,sideWalk+lateralTarget,8,dt);
- const base=s.pos.addScaledVector(sideways,lateral);base.y=interpolateTrack(track,distance).pos.y-.012;
+ const base=s.pos.addScaledVector(sideways,lateral);base.y=interpolateTrack(track,distance).pos.y-.018;
  hero.root.position.copy(base);
  const facing=s.forward.clone().multiplyScalar(motionSign||1);
  const angle=Math.atan2(facing.x,facing.z);
@@ -119,33 +119,41 @@ function optionsAt(node:number,inbound:T.Vector3,previousIndex:number){return ou
   const score=(e:Track)=>inbound.clone().dot(outward(e,node));return score(b)-score(a);
 })}
 function upcoming(){return walkVelocity<-.12?(direction>0?track.from:track.to):(direction>0?track.to:track.from)}
-function nearCrossroads(){return (walkVelocity<-.12)===(direction>0)?distance<1.3:track.total-distance<1.3}
+function nearCrossroads(){
+ const d=upcoming()===track.from?distance:track.total-distance;
+ return d<1.25;
+}
 function showRoadHint(){if(mode!=='walk'||!nearCrossroads()){roadHint.classList.remove('visible');return}
  const node=upcoming(),others=optionsAt(node,lastHeroDir,track.index);if(!others.length){roadHint.classList.remove('visible');return}
  const chosen=others[selection%others.length];const target=NODES[chosen.from===node?chosen.to:chosen.from];
  roadHint.textContent=`A / D: ${target.label||target.entry?.replaceAll('_',' ')||'OTRO CAMINO'} · W AVANZA · S REGRESA`;
  roadHint.classList.add('visible')}
 function continueFrom(node:number,inbound:T.Vector3,backwards=false){
- let next:Track|undefined;
- if(backwards&&travelHistory.length){
-  const previous=travelHistory[travelHistory.length-1];
-  const candidate=routes[previous.route];
-  if(candidate&&(candidate.from===node||candidate.to===node)){travelHistory.pop();next=candidate;}
- }
- const candidates=optionsAt(node,inbound,track.index);
- if(!next)next=candidates[selection%candidates.length];
- if(!next){ // En un extremo de la red se detiene, sin teleportar al otro extremo del tramo.
+ if(backwards){
+   // S deshace la ruta anterior: misma arista y dirección de la marcha original.
+   const previous=travelHistory[travelHistory.length-1];
+   const candidate=previous&&routes[previous.route];
+   if(candidate&&(candidate.from===node||candidate.to===node)){
+     travelHistory.pop();track=candidate;direction=previous.heading;
+     distance=candidate.to===node?candidate.total-.045:.045;
+     selection=0;return;
+   }
+   // Si se retrocede desde el primer camino, detenerse, sin teleportación.
    distance=direction===1?.045:track.total-.045;walkVelocity=0;selection=0;return;
  }
- if(!backwards)travelHistory.push({route:track.index,heading:direction});
- track=next;direction=track.from===node?1:-1;
- if(backwards){direction=direction===1?-1:1;}
- distance=direction===1?.045:track.total-.045;selection=0;
+ const candidates=optionsAt(node,inbound,track.index);
+ const next=candidates[selection%candidates.length];
+ if(!next){distance=direction===1?track.total-.045:.045;walkVelocity=0;selection=0;return;}
+ travelHistory.push({route:track.index,heading:direction});
+ track=next;direction=next.from===node?1:-1;
+ distance=direction===1?.045:track.total-.045;
+ selection=0;
 }
 function handleWalk(dt:number,t:number){
  const axis=(getKey('w','arrowup')?1:0)-(getKey('s','arrowdown')?1:0)+mobile.forward;
  const targetVelocity=T.MathUtils.clamp(axis,-1,1)*(getKey('shift')?6.1:3.5);
- // Inversión inmediata de marcha cuando se pasa de W a S (o viceversa).
+ // Cambiar de W a S invierte la marcha en ese mismo instante, sin quedarse
+ // varios fotogramas frenando en una pendiente o en un cruce.
  if(targetVelocity!==0&&Math.sign(targetVelocity)!==Math.sign(walkVelocity))walkVelocity=targetVelocity*.70;
  walkVelocity=T.MathUtils.damp(walkVelocity,targetVelocity,11,dt);
  if(Math.abs(walkVelocity)<.035){hero.update(t,false);showRoadHint();return;}
@@ -179,7 +187,7 @@ function turn(delta:number){
  if(mode!=='walk')return;
  const candidates=optionsAt(upcoming(),lastHeroDir,track.index);
  if(candidates.length>0){selection=(selection+delta+candidates.length)%candidates.length;showRoadHint();}
- lateralTarget=T.MathUtils.clamp(lateralTarget+delta*.065,-.12,.12);
+ lateralTarget=T.MathUtils.clamp(lateralTarget+delta*.035,-.07,.07);
 }
 const VOICE_STYLES:Record<string,string>={
  'Escobar':'escobar','Ignacio':'escobar','Fina':'fina','Diego León':'diego','Federico':'federico',
@@ -189,15 +197,24 @@ const VOICE_STYLES:Record<string,string>={
  'Ana María':'fina','Douglas':'federico'
 };
 const speech=document.getElementById('subtitles')!;
+let currentBeat:Linea|null=null;
+/** Actions are marginal illustrated captions, not spoken bubbles. */
 function showCaption(item:Linea|null){
- if(!item){speech.classList.remove('active');speech.setAttribute('aria-hidden','true');activeBubbleActor=null;return;}
+ currentBeat=item;
+ if(!item){speech.classList.remove('active');speech.setAttribute('aria-hidden','true');stageAside.classList.remove('active');stageAside.setAttribute('aria-hidden','true');activeBubbleActor=null;return;}
+ if(item.tipo==='accion'||!item.voz||item.voz==='Narrador'){
+   activeBubbleActor=null;speech.classList.remove('active');speech.setAttribute('aria-hidden','true');
+   stageAsideText.textContent=item.texto;
+   stageAside.classList.add('active');stageAside.setAttribute('aria-hidden','false');
+   return;
+ }
+ stageAside.classList.remove('active');stageAside.setAttribute('aria-hidden','true');
  const voice=VOICE_STYLES[item.voz];
- activeBubbleActor=voice==='escobar'?hero.root:stage?.actors.find(p=>p.style===voice)?.root ?? stage?.actors[0]?.root ??hero.root;
- speaker.textContent=item.voz==='Narrador'?'':item.voz;
+ activeBubbleActor=voice==='escobar'?hero.root:stage?.actors.find(p=>p.style===voice)?.root??stage?.actors[0]?.root??hero.root;
+ speaker.textContent=item.voz;
  subtitleText.textContent=item.texto;
- speech.classList.toggle('ambient',item.voz==='Narrador');
  source.textContent='';
- speech.classList.add('active');speech.setAttribute('aria-hidden','false');
+ speech.classList.remove('ambient');speech.classList.add('active');speech.setAttribute('aria-hidden','false');
 }
 function locateSpeech(){
  if(mode!=='interior'||!activeBubbleActor||!speech.classList.contains('active'))return;
@@ -205,7 +222,7 @@ function locateSpeech(){
  point.project(camera);
  const vw=window.innerWidth,vh=window.innerHeight;
  const x=T.MathUtils.clamp((point.x*.5+.5)*vw, vw<720?108:155,vw-(vw<720?108:175));
- const y=T.MathUtils.clamp((-.5*point.y+.5)*vh,vw<720?178:158,vh-(vw<720?260:195));
+ const y=T.MathUtils.clamp((-.5*point.y+.5)*vh,vw<720?202:165,vh-(vw<720?305:160));
  speech.style.left=x+'px';speech.style.top=y+'px';
 }
 function showChoices(){
@@ -228,7 +245,7 @@ function choose(i:number){if(phase!=='choice'||!currentSite)return;choiceIndex=i
 function changePhase(next:Phase){
  phase=next;stageTime=0;dialogueIndex=0;currentLine=-1;
  if(next==='canonical'||next==='branch'){
-  hideChoices();hint.classList.add('visible');hint.textContent='← / ↓ ANTERIOR   ·   SIGUIENTE ↑ / →';
+  hideChoices();hint.classList.add('visible');hint.textContent='← / ↓ VOLVER   ·   AVANZAR ↑ / →';
   const lines=next==='canonical'?DIALOGOS[currentSite!.id].inicio:DIALOGOS[currentSite!.id].bifurcaciones[choiceIndex].lineas;
   showCaption(lines[0]??null);currentLine=0;
  }
@@ -236,7 +253,7 @@ function changePhase(next:Phase){
   showCaption(null);showChoices();hint.classList.remove('visible');
  }
  if(next==='complete'){
-  showCaption(null);hideChoices();hint.textContent='ESC PARA VOLVER AL GLOBO · ← PARA RELEER';hint.classList.add('visible');
+  showCaption(null);hideChoices();hint.textContent='ESC PARA REGRESAR · ← PARA RELEER';hint.classList.add('visible');
  }
 }
 function sceneStep(delta:number){
@@ -250,7 +267,7 @@ function sceneStep(delta:number){
    return;
  }
  if(phase==='complete'){
-  if(delta<0&&choiceIndex>=0){phase='branch';dialogueIndex=DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas.length-1;showCaption(DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas[dialogueIndex]);hint.textContent='← / ↓ ANTERIOR   ·   SIGUIENTE ↑ / →';}
+  if(delta<0&&choiceIndex>=0){phase='branch';dialogueIndex=DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas.length-1;showCaption(DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas[dialogueIndex]);hint.textContent='← / ↓ VOLVER   ·   AVANZAR ↑ / →';}
   return;
  }
  const lines=phase==='canonical'?DIALOGOS[currentSite.id].inicio:DIALOGOS[currentSite.id].bifurcaciones[choiceIndex].lineas;
@@ -300,7 +317,7 @@ function updateInterior(dt:number,t:number,wallDt:number){if(!stage||!currentSit
   if(currentSite?.id==='parque'&&i===0){actor.root.position.x+=Math.sin(t*.55)*.65;move=true}
   if(currentSite?.id==='oasis'&&i===1){actor.root.position.z+=Math.sin(t*.49)*.25}
   if(currentSite?.id==='septima'){actor.root.position.z+=Math.sin(t*.48+i)*.69;move=true}
-  actor.root.rotation.y=angle;actor.update(t,move,1.2)
+  actor.root.rotation.y=angle;const speaking=currentBeat?.tipo==='dialogo'&&VOICE_STYLES[currentBeat.voz]===actor.style;actor.update(t,move,speaking?1.7:.85);if(speaking){actor.rightArm.rotation.z-=.20+.1*Math.sin(t*1.5);actor.head.rotation.y+=.11*Math.sin(t*1.1)}
  });
 }
 function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();return}
@@ -319,8 +336,8 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
 function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';refreshMobile();orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-10,43,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
 function beginWalking(){if(mode!=='overview')return;camera.fov=50;camera.updateProjectionMatrix();mode='walk';refreshMobile();orbit.enabled=false;orbit.autoRotate=false;const {focus,wanted}=walkingShot();camera.position.copy(wanted);camera.up.set(0,1,0);camera.lookAt(focus);caption.classList.remove('visible')}
 function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt=Math.sin(p*2*Math.PI+.45),daylight=T.MathUtils.smoothstep(alt,-.20,.65),golden=Math.pow(1-Math.abs(alt-.08),4);
- sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=(.48+3.0*daylight)*(mode==='interior'?.26:1);sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
- sky.intensity=(.68+1.25*daylight)*(mode==='interior'?.52:1);fill.intensity=(.40+.54*daylight)*(mode==='interior'?.38:1);starMat.opacity=Math.pow(1-daylight,2)*.80;
+ sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=(.58+2.55*daylight)*(mode==='interior'?.26:1);sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
+ sky.intensity=(.68+1.25*daylight)*(mode==='interior'?.52:1);fill.intensity=(.40+.54*daylight)*(mode==='interior'?.38:1);starMat.opacity=Math.pow(1-daylight,2)*.75;
  const top=new T.Color(0x27364b).lerp(new T.Color(0xdce9e5),daylight),bot=new T.Color(0x37475a).lerp(new T.Color(0xf2e7dc),daylight);top.lerp(new T.Color(0xd0b5a7),golden*.1);bot.lerp(new T.Color(0xe5c2a0),golden*.2);
  document.documentElement.style.setProperty('--sky-top','#'+top.getHexString());document.documentElement.style.setProperty('--sky-bottom','#'+bot.getHexString());renderer.toneMappingExposure=.95+daylight*.16;document.body.classList.toggle('night',daylight<.24)
 }

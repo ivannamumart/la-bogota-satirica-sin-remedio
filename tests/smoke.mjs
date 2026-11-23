@@ -32,6 +32,8 @@ try{
  if(g.dialogueIndex!==d.dialogueIndex)throw Error('No se retrocede el diálogo con flecha ↓');
  if(await page.locator('#speaker').textContent()==='Narrador')throw Error('Rótulo Narrador visible');
  await shot(page,'03-escena_dialogo');steps.push({item:'diálogo manual',antes:d.dialogueIndex,despues:f.dialogueIndex,reversa:g.dialogueIndex});
+ if(!await page.locator('#stage-aside').evaluate(e=>e.classList.contains('active')))throw Error('Las acotaciones escénicas deben ser distintas de los parlamentos');
+ if(await page.locator('#subtitles').evaluate(e=>e.classList.contains('active')))throw Error('Una acotación apareció como globo de diálogo');
  for(let i=0;i<22;i++){if((await state()).phase==='choice')break;await page.keyboard.press('ArrowUp');await page.waitForTimeout(75)}
  if((await state()).phase!=='choice')throw Error('No aparecieron las decisiones');
  if(await page.locator('.choice-option').count()!==3)throw Error('Faltan opciones');

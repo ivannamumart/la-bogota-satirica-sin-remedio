@@ -70,3 +70,40 @@ body.night .masthead,body.night .moon-control,body.night .icon-control,body.nigh
  .about-close{top:12px;right:12px}
 }
 @media(max-height:580px){.masthead{top:11px}.mobile-pad button{width:48px;height:48px}.mobile-pad-vertical button{height:30px}.mobile-pad{bottom:5px}.scene-hint{bottom:90px}}
+
+/* V08 · subtítulos escénicos y acotaciones separadas, composición editorial vintage */
+.stage-aside{position:fixed;left:clamp(22px,4.5vw,85px);top:49%;z-index:13;max-width:min(350px,30vw);color:#283531;pointer-events:none;opacity:0;transform:translateY(-38%);transition:opacity .42s,transform .42s;text-shadow:0 1px 12px rgba(243,239,224,.9)}
+.stage-aside.active{opacity:1;transform:translateY(-50%)}
+.stage-aside-kicker{font-size:9px;letter-spacing:.24em;font-weight:600;color:#55645b}
+.stage-aside p{font:italic 400 clamp(18px,1.95vw,27px)/1.33 'Instrument Serif',Georgia,serif;margin:14px 0 18px;letter-spacing:.012em}
+.stage-aside-rule{display:block;width:58px;height:2px;background:#b38b71;border-radius:1px}
+.subtitles{background:rgba(251,246,232,.94);border:0;border-left:3px solid #b18d6b;border-radius:4px 22px 22px 19px;max-width:360px;box-shadow:0 12px 36px rgba(33,42,37,.13);padding:13px 18px 16px;color:#2e3736}
+.subtitles:before{content:'“';font:italic 52px/.7 'Instrument Serif',Georgia,serif;position:absolute;top:16px;right:17px;color:#c4ae8c;opacity:.43}
+.subtitles .speaker{color:#87654b;letter-spacing:.16em;font-size:9px;font-weight:700}
+.subtitles p{font-size:clamp(18px,1.62vw,22px);line-height:1.32;padding-right:13px}
+.decisions{background:linear-gradient(180deg,transparent 2%,rgba(18,29,28,.20) 30%,rgba(18,26,27,.72));padding-bottom:max(40px,env(safe-area-inset-bottom))}
+.decisions h2{font:italic 400 clamp(28px,3.2vw,44px)/1.05 'Instrument Serif',Georgia,serif;margin:7px 0 25px}
+.decision-eyebrow{font-size:10px;letter-spacing:.20em;color:#ded1b5}
+.choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;width:min(850px,100%)}
+.choice-grid button,.choice-grid button:last-child:nth-child(odd){min-height:85px;border:1px solid rgba(235,219,181,.72);border-radius:40px 12px 40px 12px;background:rgba(35,47,51,.87);padding:16px 21px;transition:transform .2s,background .2s,border-color .2s;max-width:none;width:100%;grid-column:auto}
+.choice-grid button:hover,.choice-grid button:focus-visible{transform:translateY(-3px);background:#435555;border-color:#fae8b8}
+.choice-grid button:last-child:nth-child(odd){grid-column:1/-1;max-width:calc(50% - 8px);justify-self:center}
+.choice-grid button .choice-num{border:1px solid #e2cba7;width:28px;height:28px;color:#e7cfa6;font-size:15px;flex-shrink:0}
+.choice-text strong{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:20px;line-height:1.05}
+.choice-text small{font-size:10.5px;letter-spacing:.01em;line-height:1.34;color:#e2e2dc}
+.scene-hint{font-size:10px;bottom:17px;letter-spacing:.09em;color:#faf5e9;background:rgba(27,40,37,.56)}
+@media(max-width:720px){
+ .stage-aside{left:18px;right:20px;top:31%;max-width:72vw;text-shadow:0 1px 9px #e8e7dd}
+ .stage-aside p{font-size:clamp(17px,5vw,23px);margin:10px 0 11px}
+ .stage-aside-kicker{font-size:8px}
+ .subtitles{max-width:min(264px,67vw);width:auto;padding:11px 12px 13px}
+ .subtitles p{font-size:17px;padding-right:7px}
+ .subtitles .speaker{font-size:8px}
+ .decisions{padding:0 12px calc(104px + env(safe-area-inset-bottom))}
+ .decisions h2{font-size:28px;margin:6px 0 14px}
+ .choice-grid{grid-template-columns:1fr;max-height:52vh;overflow:auto;gap:8px}
+ .choice-grid button,.choice-grid button:last-child:nth-child(odd){grid-column:auto;max-width:none;min-height:60px;border-radius:25px 8px 25px 8px;padding:9px 13px}
+ .choice-grid .choice-num{width:23px;height:23px;font-size:12px}
+ .choice-text strong{font-size:17px}
+ .choice-text small{font-size:10px}
+}

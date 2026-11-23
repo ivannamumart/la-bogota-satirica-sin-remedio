@@ -11,22 +11,43 @@ export type Track={index:number;from:number;to:number;points:T.Vector3[];lengths
 export function dir(lat:number,lon:number){const a=lat*Math.PI/180,b=lon*Math.PI/180;return new T.Vector3(Math.cos(a)*Math.sin(b),Math.sin(a),Math.cos(a)*Math.cos(b));}
 const pi=Math.PI;
 function smooth(a:number,b:number,x:number){const t=T.MathUtils.clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)}
-function baseHeight(x:number,z:number){return Math.sqrt(Math.max(.6,R*R-x*x-z*z))}
+/** V08: explanada urbana continua; inclinación controlada hacia el borde.
+ * La esfera gris conserva su radio y sigue siendo completamente tridimensional.
+ * Ninguna construcción se apoya en una tangente aislada del planeta.
+ */
+function baseHeight(x:number,z:number){
+ const r=Math.hypot(x,z);
+ const sphere=Math.sqrt(Math.max(.6,R*R-r*r));
+ const plateau=11.55+.055*Math.sin(z*.25)+.032*Math.sin(x*.43);
+ // Corona plana hasta r=6.05; la caída se absorbe progresivamente.
+ return T.MathUtils.lerp(plateau,sphere,smooth(6.05,CAP_R,r));
+}
 function mountain(x:number,z:number){
- // Los Cerros ocupan el oriente (derecha de la planta) y son una sierra continua.
- // Sus crestas no son conos independientes; la forma se pliega sobre el borde.
- const e=smooth(3.8,7.2,x),radius=Math.hypot(x,z),fade=1-smooth(9.0,10.45,radius);
- const ridge=2.42 +.71*Math.sin(z*.65+.45)+.24*Math.sin(z*1.58+1.2);
- const mon=3.05*Math.exp(-Math.pow((z+2.05)/1.25,2));
- const gua=2.12*Math.exp(-Math.pow((z-1.40)/1.38,2));
- const needle=.22*Math.sin(z*3.3+x*1.12)**2;
- return Math.max(0,(ridge+mon+gua+needle)*e*fade);
+ // Sierra continua al oriente. Se integra en la misma malla del terreno.
+ const orient=smooth(4.25,7.3,x);
+ const radius=Math.hypot(x,z),falloff=1-smooth(9.45,10.2,radius);
+ const ridge=2.05+.57*Math.sin(z*.63+.38)+.22*Math.sin(z*1.57+1.22);
+ const mon=2.45*Math.exp(-((z+2.18)/1.10)**2);
+ const gua=1.72*Math.exp(-((z-1.52)/1.18)**2);
+ return Math.max(0,(ridge+mon+gua+.12*Math.sin(z*3.3+x*.55)**2)*orient*falloff);
 }
 export function terrainY(x:number,z:number){
  const r=Math.hypot(x,z);
- const ripple=.17+.040*Math.sin(x*1.6+z*.35)*Math.cos(z*1.8)+.025*Math.sin(x*3.4-z*1.3);
- const v=baseHeight(x,z)+mountain(x,z)+ripple*(1-smooth(8.8,10.2,r));
- return v;
+ const local=.018*Math.sin(x*1.35+z*.3)*Math.cos(z*1.20)+.010*Math.sin(x*2.4-z*1.8);
+ let height=baseHeight(x,z)+local*(1-smooth(6.1,9.8,r));
+ // La ladera se transforma en montaña sin montajes superpuestos.
+ height+=mountain(x,z);
+ // Explanadas orgánicas en cada hito: edificaciones enteramente apoyadas.
+ for(const p of PLACES){
+  if(!p.scene)continue;
+  const d=Math.hypot(x-p.x,z-p.z);
+  if(d>=2.45)continue;
+  const factor=1-smooth(1.0,2.45,d);
+  // No modificar la elevación de la ladera de los Cerros.
+  const grade=baseHeight(p.x,p.z)+.018*Math.sin(p.x*1.35+p.z*.3)*Math.cos(p.z*1.2);
+  height=T.MathUtils.lerp(height,grade,factor*.94);
+ }
+ return height;
 }
 export function terrain(x:number,z:number,extra=0){return new T.Vector3(x,terrainY(x,z)+extra,z)}
 const nodeIndex=new Map(NODES.map((n,i)=>[n.id,i]));
@@ -40,7 +61,7 @@ function texturedGraySphere(){
  const m=new T.MeshStandardMaterial({map:paint('stone').map!,vertexColors:true,roughness:1});const mesh=new T.Mesh(g,m);mesh.receiveShadow=true;return mesh;
 }
 function cap(){const segments=196,rings=90,vertices:number[]=[],colors:number[]=[],indices:number[]=[];
- const green=new T.Color(0xb2bba5),turf=new T.Color(0xc6cbb9),ridge=new T.Color(0x758975),warm=new T.Color(0xcac4b7);
+ const green=new T.Color(0xb4bfb0),turf=new T.Color(0xd0d4c2),ridge=new T.Color(0x738c7b),warm=new T.Color(0xc7c5b8);
  for(let r=0;r<=rings;r++){
   const rad=CAP_R*r/rings;
   for(let i=0;i<=segments;i++){
@@ -49,7 +70,7 @@ function cap(){const segments=196,rings=90,vertices:number[]=[],colors:number[]=
    const clim=mountain(x,z),v=.975+.012*Math.sin(x*5.1+z*3.7)+.010*Math.sin(x*12-z*8);
    const col=green.clone().lerp(ridge,smooth(.20,2.5,clim)*.64).lerp(turf,(Math.sin(x*.36+z*.32)+1)*.13);
    // Cemento mezclado visualmente en el borde, sin materialización de otro hemisferio urbano.
-   col.lerp(warm,smooth(9.25,10.20,rad)*.34);
+   col.lerp(warm,smooth(9.40,10.20,rad)*.26);
    col.multiplyScalar(v);colors.push(col.r,col.g,col.b);
    if(r<rings&&i<segments){const k=r*(segments+1)+i;indices.push(k,k+1,k+segments+1,k+1,k+segments+2,k+segments+1)}
   }
@@ -110,7 +131,7 @@ function road(edge:typeof EDGES[number],index:number):Track{
  for(let i=1;i<pts.length;i++){total+=pts[i].distanceTo(pts[i-1]);lengths.push(total)}
  const g=new T.Group(),main=edge.kind==='septima'||edge.kind==='veintiseis',w=edge.kind==='sendero'?.29:main?.69:.49;
  // borde de andén bajo una calzada real, no camino de color beige.
- ribbon(g,pts,w+.25,paint('stone',0xd6cbbb));ribbon(g,pts,w,paint('slate',main?0x535d61:0x69706c),.010);
+ ribbon(g,pts,w+.24,paint('stone',0xd8d3c5));ribbon(g,pts,w,paint('slate',main?0x586063:0x757873),.013);
  if(main){const marks:T.Vector3[][]=[];for(let d=.5;d<total-.23;d+=1.15){const a=interpolatePolyline(pts,lengths,d),b=interpolatePolyline(pts,lengths,Math.min(total-.07,d+.29));marks.push([a.clone().add(new T.Vector3(0,.035,0)),b.clone().add(new T.Vector3(0,.035,0))])}
  const lines=new T.BufferGeometry().setFromPoints(marks.flat());g.add(new T.LineSegments(lines,new T.LineBasicMaterial({color:0xd6d1c4,transparent:true,opacity:.61})))
  }

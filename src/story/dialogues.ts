@@ -1,6 +1,6 @@
 /** Textos breves del guion aportado por la autora. Los pasajes con fuente P- están
  * etiquetados como corpus; la oficina y las alternativas son escritura interpretativa. */
-export interface Linea {voz:string; texto:string; fuente?:string; interpretativa?:boolean}
+export interface Linea {voz:string; texto:string; fuente?:string; interpretativa?:boolean; tipo?:'accion'|'dialogo'; foco?:string}
 export interface EscenaTexto { inicio:Linea[]; bifurcaciones:{titulo:string;lineas:Linea[]}[] }
 const C=(voz:string,texto:string,fuente:string):Linea=>({voz,texto,fuente});
 const I=(voz:string,texto:string):Linea=>({voz,texto,interpretativa:true});
