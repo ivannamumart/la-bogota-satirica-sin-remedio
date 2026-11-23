@@ -13,8 +13,8 @@ import './ui/styles.css';
 const el=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const mount=el('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about'),roadHint=el('road-hint');
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(35,window.innerWidth/window.innerHeight,.10,260);
-const targetOverview=new T.Vector3(0,5.4,0);
-camera.position.set(0,32,40);camera.lookAt(targetOverview);
+const targetOverview=new T.Vector3(0,3.4,0);
+camera.position.set(-18,34,40);camera.lookAt(targetOverview);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.35));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.10;renderer.shadowMap.enabled=false;mount.appendChild(renderer.domElement);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.copy(targetOverview);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=29;orbit.maxDistance=65;orbit.maxPolarAngle=Math.PI*.67;orbit.minPolarAngle=.11;orbit.rotateSpeed=.46;orbit.autoRotate=true;orbit.autoRotateSpeed=.20;
@@ -192,7 +192,7 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
   camera.position.lerp(desired,1-Math.exp(-dt*1.7));camera.up.set(0,1,0);camera.lookAt(aim)
  }
 }
-function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(0,32,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
+function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-18,34,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
 function beginWalking(){if(mode!=='overview')return;camera.fov=50;camera.updateProjectionMatrix();mode='walk';orbit.enabled=false;orbit.autoRotate=false;const {focus,wanted}=walkingShot();camera.position.copy(wanted);camera.up.set(0,1,0);camera.lookAt(focus);caption.classList.remove('visible')}
 function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt=Math.sin(p*2*Math.PI+.45),daylight=T.MathUtils.smoothstep(alt,-.20,.65),golden=Math.pow(1-Math.abs(alt-.08),4);
  sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=(.48+3.0*daylight)*(mode==='interior'?.26:1);sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
