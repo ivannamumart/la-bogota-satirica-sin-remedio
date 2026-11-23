@@ -65,8 +65,8 @@ function walkingShot(){
  // Cámara de tercer persona a escala humana, nunca un vuelo sobre los tejados.
  const f=lastHeroDir.clone().setY(0).normalize();
  const side=new T.Vector3(-f.z,0,f.x);
- const focus=lastHeroPos.clone().addScaledVector(f,.35).add(new T.Vector3(0,1.05,0));
- const origin=lastHeroPos.clone().addScaledVector(f,-3.85).add(new T.Vector3(0,2.85,0));
+ const focus=lastHeroPos.clone().addScaledVector(f,.70).add(new T.Vector3(0,1.13,0));
+ const origin=lastHeroPos.clone().addScaledVector(f,-4.70).add(new T.Vector3(0,2.80,0));
  const options=[
   origin.clone().addScaledVector(side,1.45),
   origin.clone().addScaledVector(side,-1.45),
@@ -145,7 +145,9 @@ function continueFrom(node:number,inbound:T.Vector3,backwards=false){
 function handleWalk(dt:number,t:number){
  const axis=(getKey('w','arrowup')?1:0)-(getKey('s','arrowdown')?1:0)+mobile.forward;
  const targetVelocity=T.MathUtils.clamp(axis,-1,1)*(getKey('shift')?6.1:3.5);
- walkVelocity=T.MathUtils.damp(walkVelocity,targetVelocity,7,dt);
+ // Inversión inmediata de marcha cuando se pasa de W a S (o viceversa).
+ if(targetVelocity!==0&&Math.sign(targetVelocity)!==Math.sign(walkVelocity))walkVelocity=targetVelocity*.70;
+ walkVelocity=T.MathUtils.damp(walkVelocity,targetVelocity,11,dt);
  if(Math.abs(walkVelocity)<.035){hero.update(t,false);showRoadHint();return;}
  const step=Math.sign(walkVelocity),delta=Math.min(.20,Math.abs(walkVelocity)*dt);
  const beforeDistance=distance;
