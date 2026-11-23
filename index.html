@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>La Bogotá satírica · Sin remedio</title>
+<meta name="description" content="Una cartografía geocrítica especulativa de Sin remedio de Antonio Caballero. Experiencia navegable de maestría en Humanidades Digitales."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+</head><body>
+<div id="world" aria-label="Mundo tridimensional navegable de Bogotá satírica"></div>
+<div id="paper-grain" aria-hidden="true"></div>
+<div class="title-zone" aria-label="Título del proyecto">
+<span class="tiny-overline">CARTOGRAFÍA ESPECULATIVA · 1972 / 2026</span>
+<h1>La Bogotá <em>satírica</em></h1>
+<span class="subtitle">de <em>Sin remedio</em> · Antonio Caballero</span>
+</div>
+<button id="moon" class="moon-btn" title="Abrir investigación" aria-label="Abrir investigación">
+<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M23.8 23.8A12 12 0 0 1 13 3.2 12.4 12.4 0 1 0 28.8 19 12 12 0 0 1 23.8 23.8Z" fill="currentColor"/></svg>
+</button>
+<button id="center" class="reset-btn" title="Volver a ver el globo" aria-label="Centrar globo"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5" stroke="currentColor" stroke-width="1.2"/></svg></button>
+<div class="location" id="location" role="status"><span class="loc-index" id="loc-index">01 / 12</span><span class="loc-name" id="loc-name">La Soledad</span><span class="loc-region" id="loc-region">Intimidad</span></div>
+<div id="intro" class="intro" aria-live="polite"><span class="intro-line"></span><span>Arrastra para descubrir el globo</span><span class="intro-dot">·</span><span>WASD o flechas para caminar con Escobar</span><span class="intro-line"></span></div>
+<div class="bottom-note" id="bottom-note">UN MUNDO PARA LEER CON LOS PIES</div>
+<div class="dialogue" id="dialogue" aria-live="polite" aria-hidden="true">
+ <div class="dialogue-upper"><span id="speaker">Narrador</span><span id="source"></span></div>
+ <p id="line"></p><div id="choices" class="choices" aria-label="Alternativas narrativas"></div>
+ <div class="dialogue-foot"><span id="dialogue-kind">VOZ DE LA NOVELA</span><span id="progress">01 / 03</span></div>
+</div>
+<div id="scene-veil" class="scene-veil" aria-hidden="true"></div>
+<section id="academic" class="academic" aria-hidden="true">
+<button class="academic-close" id="academic-close" aria-label="Regresar al mundo">×</button>
+<div class="academic-shell"><p class="academic-eyebrow">LA INVESTIGACIÓN / EL MUNDO</p><h2>La ciudad <em>sin remedio</em></h2><p class="acad-intro">Cartografía geocrítica de Bogotá en la novela de Antonio Caballero desde las humanidades digitales.</p>
+<div class="academic-meta">Ivanna Muñoz Martínez <span>·</span> Maestría en Humanidades Digitales <span>·</span> Universidad de los Andes</div>
+<nav class="academic-nav" aria-label="Secciones de investigación">
+<button class="active" data-article="argumento">Argumento</button>
+<button data-article="objetivos">Objetivos</button>
+<button data-article="metodo">Humano-en-la-Jugada</button>
+<button data-article="caja">Segunda Caja Negra</button>
+<button data-article="teoria">Marco teórico</button>
+<button data-article="referencias">Referencias</button>
+</nav>
+<article id="article" class="academic-article"><h3>Argumento central</h3><p>La Bogotá de <em>Sin remedio</em> se construye entre la materialidad urbana y las percepciones, afectos y contradicciones de quienes la habitan. Esta visualización reúne doce espacios narrativos recurrentes en una cartografía especulativa: una ciudad que se camina para interrogar cómo una novela hace territorio.</p><p>El globo es una composición interpretativa, no una reconstrucción métrica ni topográfica de la ciudad real. Su geografía responde a relaciones literarias, sociales y satíricas.</p></article>
+<p class="academic-footer">Prototipo de investigación · lectura en construcción · <span>2026</span></p>
+</div></section>
+<div class="error hidden" id="error" role="alert"><h2>El mundo no pudo iniciarse</h2><p id="error-text"></p><button onclick="location.reload()">Reintentar</button></div>
+<script type="module" src="/src/main.ts"></script>
+</body></html>

@@ -1,0 +1,17 @@
+name: Comprobar prototipo
+on:
+  push:
+    branches: [main, prototipo-web-v1]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Validar TypeScript y compilar
+        run: npm run build
