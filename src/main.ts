@@ -43,7 +43,8 @@ const cameraRaycaster=new T.Raycaster();const nearbyObstacles:T.Object3D[]=[];
 const hero=character('escobar',.45);world.add(hero.root);
 type Mode='overview'|'walk'|'interior'|'transition';type Phase='arrival'|'canonical'|'choice'|'branch'|'complete';
 let mode:Mode='overview',phase:Phase='arrival',stage:Stage|null=null,currentSite:Site|null=null;
-let route:Track=routes[0],routeDistance=Math.min(1.0,routes[0].total*.20),facing=1;
+const ENTRY_MARGIN=1.75;
+let route:Track=routes[0],routeDistance=Math.min(2.55,routes[0].total*.37),facing=1;
 let paused=false,lock=false,ignoreEntryUntil=0;let timeOfDay=74,stageTime=0,currentLine=-1,choiceIndex=-1;
 const input=new Set<string>();let mobileForward=0,mobileSide=0,touchStart: {x:number;y:number}|null=null;
 const keyset=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift','escape','1','2','3','n'];
@@ -81,6 +82,16 @@ function handleWalk(dt:number){
  const speed=(getKey('shift')?5.25:3.70)*dt;
  const move=forward>0?1:-1;
  routeDistance+=speed*move*facing;
+ // Llegada a la puerta antes de atravesar las paredes del edificio.
+ // El núcleo urbano se usa como destino escénico; Escobar camina por el sendero externo.
+ if(performance.now()>ignoreEntryUntil){
+   if(move*facing>0&&route.total-routeDistance<=ENTRY_MARGIN&&SITES[route.to]?.scene){
+     routeDistance=Math.max(0,route.total-ENTRY_MARGIN);updateHero();enter(SITES[route.to]);return;
+   }
+   if(move*facing<0&&routeDistance<=ENTRY_MARGIN&&SITES[route.from]?.scene){
+     routeDistance=ENTRY_MARGIN;updateHero();enter(SITES[route.from]);return;
+   }
+ }
  const reachEnd=routeDistance>route.total,reachStart=routeDistance<0;
  if(reachEnd||reachStart){
    const index=reachEnd?route.to:route.from;
@@ -136,10 +147,19 @@ function enter(site:Site){if(lock||mode==='interior')return;
 }
 function leave(){if(!stage||lock)return;
  fadeTo(()=>{
+  const departingSite=currentSite;
   scene.remove(stage!.root);stage=null;currentSite=null;scene.remove(hero.root);
-  world.visible=true;world.add(hero.root);hero.root.scale.setScalar(.45);updateHero();
+  world.visible=true;world.add(hero.root);hero.root.scale.setScalar(.45);
+  // Al salir, nos situamos al comienzo del siguiente tramo, fuera del volumen de la casa.
+  const index=departingSite?SITES.indexOf(departingSite):-1;
+  if(index>=0&&route.to===index&&route.total-routeDistance<ENTRY_MARGIN+1.3){
+    switchTrack(index,1);routeDistance=Math.min(2.55,route.total*.37);
+  }else if(index>=0&&route.from===index&&routeDistance<ENTRY_MARGIN+1.3){
+    switchTrack(index,-1);routeDistance=Math.max(0,route.total-2.55);
+  }
+  updateHero();
   mode='walk';ignoreEntryUntil=performance.now()+4000;showCaption(null);hideChoices();classToggle(hint,'visible',false);
-  camera.position.copy(lastHeroPos).addScaledVector(lastNormal,6.7).addScaledVector(lastHeroDir,-3.5);
+  camera.position.copy(lastHeroPos).addScaledVector(lastNormal,7.5).addScaledVector(lastHeroDir,-2.4);
   camera.up.copy(lastNormal);camera.lookAt(lastHeroPos.clone().addScaledVector(lastNormal,.65));
  });
 }
@@ -216,7 +236,7 @@ function followCamera(dt:number,t:number){
  if(mode==='overview'){orbit.update();return;}
  if(mode==='walk'){
   const p=lastHeroPos.clone(),normal=lastNormal.clone();
-  const desired=p.addScaledVector(normal,6.7).addScaledVector(lastHeroDir,-3.5);
+  const desired=p.addScaledVector(normal,7.5).addScaledVector(lastHeroDir,-2.4);
   // Evitar que edificios y tejados tapen a Escobar al tomar una curva o salir de una escena.
   const focus=lastHeroPos.clone().addScaledVector(normal,.52);
   const ray=desired.clone().sub(focus);const rayDistance=ray.length();
@@ -244,7 +264,7 @@ function toOverview(){if(mode==='interior'){leave();return;}
  camera.up.set(0,1,0);camera.position.set(0,5.5,62);camera.lookAt(0,1.5,0);orbit.update();classToggle(caption,'visible',false);
 }
 function beginWalking(){if(mode!=='overview')return;mode='walk';orbit.enabled=false;orbit.autoRotate=false;
- camera.position.copy(lastHeroPos).addScaledVector(lastNormal,6.7).addScaledVector(lastHeroDir,-3.5);
+ camera.position.copy(lastHeroPos).addScaledVector(lastNormal,7.5).addScaledVector(lastHeroDir,-2.4);
  camera.up.copy(lastNormal);camera.lookAt(lastHeroPos.clone().addScaledVector(lastNormal,.90));classToggle(caption,'visible',false);
 }
 // Momento del día: un ciclo completo cada cinco minutos, sin controles que ensucien la pantalla.
