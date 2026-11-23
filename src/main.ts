@@ -15,7 +15,7 @@ const mount=el<HTMLDivElement>('world'),subtitles=el('subtitles'),speaker=el('sp
  decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about');
 const scene=new T.Scene();
 const camera=new T.PerspectiveCamera(43,window.innerWidth/window.innerHeight,.10,260);
-camera.position.set(0,7.3,51.8);camera.lookAt(0,0,0);
+camera.position.set(0,5.5,62);camera.lookAt(0,1.5,0);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.20));
@@ -38,7 +38,8 @@ for(let i=0;i<680;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const z=see
  stars.push(108*Math.sqrt(1-z*z)*Math.sin(a),108*z,108*Math.sqrt(1-z*z)*Math.cos(a));}
 starGeo.setAttribute('position',new T.Float32BufferAttribute(stars,3));
 const starMat=new T.PointsMaterial({color:0xecead9,size:.64,transparent:true,opacity:0,depthWrite:false});scene.add(new T.Points(starGeo,starMat));
-const {world,routes}=createPlanet();scene.add(world);
+const {world,routes,buildings}=createPlanet();scene.add(world);
+const cameraRaycaster=new T.Raycaster();const nearbyObstacles:T.Object3D[]=[];
 const hero=character('escobar',.45);world.add(hero.root);
 type Mode='overview'|'walk'|'interior'|'transition';type Phase='arrival'|'canonical'|'choice'|'branch'|'complete';
 let mode:Mode='overview',phase:Phase='arrival',stage:Stage|null=null,currentSite:Site|null=null;
@@ -138,7 +139,7 @@ function leave(){if(!stage||lock)return;
   scene.remove(stage!.root);stage=null;currentSite=null;scene.remove(hero.root);
   world.visible=true;world.add(hero.root);hero.root.scale.setScalar(.45);updateHero();
   mode='walk';ignoreEntryUntil=performance.now()+4000;showCaption(null);hideChoices();classToggle(hint,'visible',false);
-  camera.position.copy(lastHeroPos).addScaledVector(lastNormal,5.6).addScaledVector(lastHeroDir,-6.5);
+  camera.position.copy(lastHeroPos).addScaledVector(lastNormal,6.7).addScaledVector(lastHeroDir,-3.5);
   camera.up.copy(lastNormal);camera.lookAt(lastHeroPos.clone().addScaledVector(lastNormal,.65));
  });
 }
@@ -215,7 +216,17 @@ function followCamera(dt:number,t:number){
  if(mode==='overview'){orbit.update();return;}
  if(mode==='walk'){
   const p=lastHeroPos.clone(),normal=lastNormal.clone();
-  const desired=p.addScaledVector(normal,5.6).addScaledVector(lastHeroDir,-6.5);
+  const desired=p.addScaledVector(normal,6.7).addScaledVector(lastHeroDir,-3.5);
+  // Evitar que edificios y tejados tapen a Escobar al tomar una curva o salir de una escena.
+  const focus=lastHeroPos.clone().addScaledVector(normal,.52);
+  const ray=desired.clone().sub(focus);const rayDistance=ray.length();
+  cameraRaycaster.set(focus,ray.normalize());cameraRaycaster.far=rayDistance-.35;
+  nearbyObstacles.length=0;
+  for(const building of buildings.values())if(building.position.distanceTo(focus)<7.5)nearbyObstacles.push(building);
+  const collision=cameraRaycaster.intersectObjects(nearbyObstacles,true)[0];
+  if(collision&&collision.distance>1.45){desired.copy(focus).addScaledVector(ray,Math.max(1.45,collision.distance-.60));}
+  else if(collision){desired.copy(focus).addScaledVector(normal,3.8);}
+
   const gaze=lastHeroPos.clone().addScaledVector(normal,.85).addScaledVector(lastHeroDir,1.5);
   camera.position.lerp(desired,1-Math.exp(-dt*2.8));
   camera.up.lerp(normal,1-Math.exp(-dt*3.1)).normalize();camera.lookAt(gaze);
@@ -229,11 +240,11 @@ function followCamera(dt:number,t:number){
  }
 }
 function toOverview(){if(mode==='interior'){leave();return;}
- mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.set(0,0,0);
- camera.up.set(0,1,0);camera.position.set(0,7.3,51.8);camera.lookAt(0,0,0);orbit.update();classToggle(caption,'visible',false);
+ mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.set(0,1.5,0);
+ camera.up.set(0,1,0);camera.position.set(0,5.5,62);camera.lookAt(0,1.5,0);orbit.update();classToggle(caption,'visible',false);
 }
 function beginWalking(){if(mode!=='overview')return;mode='walk';orbit.enabled=false;orbit.autoRotate=false;
- camera.position.copy(lastHeroPos).addScaledVector(lastNormal,5.6).addScaledVector(lastHeroDir,-6.5);
+ camera.position.copy(lastHeroPos).addScaledVector(lastNormal,6.7).addScaledVector(lastHeroDir,-3.5);
  camera.up.copy(lastNormal);camera.lookAt(lastHeroPos.clone().addScaledVector(lastNormal,.90));classToggle(caption,'visible',false);
 }
 // Momento del día: un ciclo completo cada cinco minutos, sin controles que ensucien la pantalla.
