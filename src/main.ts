@@ -61,25 +61,31 @@ function clearDistance(focus:T.Vector3,wanted:T.Vector3){
  * la cámara entre fachadas de tamaño fantástico. Conserva la dirección de marcha.
  */
 function walkingShot(){
- // Encuadre sobre el hombro adaptable: evita edificios entre Escobar y la cámara.
- // La alternativa más vertical se reserva para los cruces visualmente congestionados.
- const right=new T.Vector3(-lastHeroDir.z,0,lastHeroDir.x);
- const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,.48).add(new T.Vector3(0,.67,0));
- const options=[
-   lastHeroPos.clone().addScaledVector(lastHeroDir,-3.50).addScaledVector(right, 2.6).add(new T.Vector3(0,10.3,0)),
-   lastHeroPos.clone().addScaledVector(lastHeroDir,-3.50).addScaledVector(right,-2.6).add(new T.Vector3(0,10.3,0)),
-   lastHeroPos.clone().addScaledVector(lastHeroDir,-4.65).addScaledVector(right,4.3).add(new T.Vector3(0,12.6,0)),
-   lastHeroPos.clone().addScaledVector(lastHeroDir,-4.65).addScaledVector(right,-4.3).add(new T.Vector3(0,12.6,0)),
-   lastHeroPos.clone().addScaledVector(lastHeroDir,-1.05).add(new T.Vector3(0,12.5,0))
+ // Cámara en tercera persona, cercana a Ignacio y orientada al camino.
+ const f=lastHeroDir.clone().setY(0).normalize();
+ const side=new T.Vector3(-f.z,0,f.x);
+ const focus=lastHeroPos.clone().addScaledVector(f,1.55).add(new T.Vector3(0,1.18,0));
+ const origin=lastHeroPos.clone().addScaledVector(f,-3.55).add(new T.Vector3(0,3.25,0));
+ const variants=[
+   origin.clone().addScaledVector(side,1.50),
+   origin.clone().addScaledVector(side,-1.50),
+   origin.clone(),
+   origin.clone().addScaledVector(side,2.35).add(new T.Vector3(0,.85,0)),
+   origin.clone().addScaledVector(side,-2.35).add(new T.Vector3(0,.85,0))
  ];
- let idx=0,best=Infinity;
- for(let i=0;i<options.length;i++){
-   const penalty=occlusionPenalty(focus,options[i])*100+i*.12;
-   if(penalty<best){best=penalty;idx=i}
+ let best=variants[0],score=Infinity;
+ for(const v of variants){
+  const obstacles=occlusionPenalty(focus,v);
+  const clearance=clearDistance(focus,v);
+  const err=obstacles*80+(v.distanceTo(focus)-clearance)*6+Math.abs(v.x-lastHeroPos.x)*.025;
+  if(err<score){score=err;best=v}
  }
- return {focus,wanted:options[idx]};
+ const available=clearDistance(focus,best);
+ const wanted=focus.clone().lerp(best,Math.min(1,available/Math.max(.001,focus.distanceTo(best))));
+ return {focus,wanted};
 }
-const hero=character('escobar',.50);world.add(hero.root);
+
+const hero=character('escobar',.76);world.add(hero.root);
 // Sombra natural bajo los pies, sin marcadores de interfaz sobre el protagonista.
 const footShade=new T.Mesh(new T.CircleGeometry(.34,24),new T.MeshBasicMaterial({color:0x314135,transparent:true,opacity:.20,depthWrite:false,side:T.DoubleSide}));
 footShade.rotation.x=-Math.PI/2;footShade.position.y=-.065;hero.root.add(footShade);
@@ -144,7 +150,7 @@ function enter(site:Site){if(lock||mode==='interior')return;roadHint.classList.r
  phase='arrival';stageTime=0;currentLine=-1;choiceIndex=-1;showCaption(null);hideChoices();hint.classList.remove('visible');mode='interior';
  })}
 function leave(){if(!stage||lock)return;fadeTo(()=>{
- scene.remove(stage!.root);stage=null;currentSite=null;scene.remove(hero.root);world.visible=true;world.add(hero.root);hero.root.scale.setScalar(.50);
+ scene.remove(stage!.root);stage=null;currentSite=null;scene.remove(hero.root);world.visible=true;world.add(hero.root);hero.root.scale.setScalar(.76);
  const node=direction===1?track.to:track.from;distance=direction===1?Math.max(0,track.total-.7):Math.min(track.total,.7);
  // Al salir, caminar hacia atrás permite alejarse de la puerta antes del próximo ingreso.
  direction=direction===1?-1:1;positionHero();mode='walk';ignoreEntryUntil=performance.now()+2500;
