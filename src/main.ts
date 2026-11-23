@@ -374,7 +374,7 @@ for(const button of Array.from(mobilePad.querySelectorAll<HTMLButtonElement>('bu
  const key=button.dataset.key!;
  const release=()=>{keys.delete(key);button.classList.remove('pressed')};
  button.addEventListener('pointerdown',e=>{
-  e.preventDefault();button.setPointerCapture(e.pointerId);button.classList.add('pressed');
+  e.preventDefault();try{button.setPointerCapture(e.pointerId)}catch{}button.classList.add('pressed');
   if(mode==='interior'&&phase!=='complete'&&(key==='w'||key==='s')){sceneStep(key==='w'?1:-1);return;}
   if(mode==='walk'&&(key==='a'||key==='d')){turn(key==='a'?-1:1);return;}
   keys.add(key);
