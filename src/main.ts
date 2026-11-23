@@ -163,8 +163,8 @@ function leave(){if(!stage||lock)return;
   camera.up.copy(lastNormal);camera.lookAt(lastHeroPos.clone().addScaledVector(lastNormal,.65));
  });
 }
-function updateInterior(dt:number,t:number){if(!stage||!currentSite)return;
- stageTime+=dt;
+function updateInterior(dt:number,t:number,wallDt:number){if(!stage||!currentSite)return;
+ stageTime+=wallDt;
  const story=DIALOGOS[currentSite.id];
  if(phase==='arrival'){
    const step=T.MathUtils.smoothstep(stageTime,0,4.6);
@@ -283,11 +283,11 @@ function dayNight(dt:number){timeOfDay+=dt;const phase=(timeOfDay%300)/300;
 }
 let last=performance.now();let elapsed=0;
 function tick(now:number){requestAnimationFrame(tick);
- const dt=Math.min((now-last)/1000,.046);last=now;elapsed+=dt;
- if(!paused){dayNight(dt);
+ const wallDt=Math.min((now-last)/1000,2.5);const dt=Math.min(wallDt,.046);last=now;elapsed+=wallDt;
+ if(!paused){dayNight(wallDt);
   if(mode==='walk')handleWalk(dt);
   else if(mode==='overview')hero.update(elapsed,false);
-  else if(mode==='interior')updateInterior(dt,elapsed);
+  else if(mode==='interior')updateInterior(dt,elapsed,wallDt);
   followCamera(dt,elapsed);
  }
  renderer.render(scene,camera);
