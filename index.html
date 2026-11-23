@@ -14,8 +14,8 @@
 <div id="world" role="application" aria-label="Mundo tridimensional navegable de La Bogotá satírica de Sin remedio"></div>
 <div id="grain" aria-hidden="true"></div>
 <header class="masthead" aria-label="Título del proyecto">
-  <div class="mast-kicker">BOGOTÁ · 1972</div>
-  <h1>La Bogotá satírica <em>de Sin remedio</em></h1>
+  <div class="mast-kicker">UNA CARTOGRAFÍA ESPECULATIVA · BOGOTÁ 1972</div>
+  <h1>LA BOGOTÁ SATÍRICA DE <em>SIN REMEDIO</em></h1>
 </header>
 <nav class="controls" aria-label="Controles del visualizador">
   <button id="center" class="icon-control" type="button" title="Centrar el mundo" aria-label="Centrar el mundo">
@@ -38,10 +38,24 @@
   <div id="choices" class="choice-grid"></div>
 </div>
 <div id="scene-hint" class="scene-hint" aria-live="polite"></div>
+<div id="road-hint" class="road-hint" aria-live="polite"></div>
 <div id="fade" class="fade" aria-hidden="true"></div>
 <section id="about" class="about" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="about-title">
-  <button id="about-close" class="about-close" type="button" aria-label="Cerrar y regresar al mundo">×</button>
-  <div class="about-content"><div class="about-small">LA BOGOTÁ SATÍRICA DE SIN REMEDIO</div><h2 id="about-title">Sobre el proyecto</h2><p>En construcción.</p></div>
+  <button id="about-close" class="about-close" type="button" aria-label="Cerrar y regresar al mundo">× <span>VOLVER AL MUNDO</span></button>
+  <div class="about-content">
+    <p class="about-small">UNIVERSIDAD DE LOS ANDES · MAESTRÍA EN HUMANIDADES DIGITALES</p>
+    <h2 id="about-title">SOBRE EL PROYECTO</h2>
+    <p class="about-intro">Una cartografía especulativa de la Bogotá satírica de <em>Sin remedio</em>.</p>
+    <div class="about-columns">
+      <div><h3>LA INVESTIGACIÓN</h3><p><strong>Transpaisajismo: alcances y límites de un nuevo enfoque geocrítico ante la espacialidad satírica de <em>Sin remedio</em>.</strong></p>
+      <p>¿Qué alcances y límites del transpaisajismo geocrítico revela <em>Sin remedio</em> al ser leída desde la sátira menipea?</p>
+      <h3>OBJETIVO GENERAL</h3><p>Determinar los alcances y límites del transpaisajismo geocrítico al leer la novela <em>Sin remedio</em> de Antonio Caballero desde la sátira menipea.</p></div>
+      <div><h3>OBJETIVOS ESPECÍFICOS</h3><ol><li>Analizar la sátira menipea mediante lectura cercana.</li><li>Construir una cartografía especulativa.</li><li>Contrastar el análisis literario con el procesamiento algorítmico de la sátira espacial.</li><li>Articular las capas resultantes en un visualizador web interactivo.</li></ol>
+      <h3>PROCEDIMIENTO</h3><p>Lectura cercana, preparación del corpus, selección de lugares recurrentes y diseño de una cartografía narrativa. Este prototipo presenta una versión escénica experimental.</p></div>
+    </div>
+    <div class="about-pending"><section><h3>RESULTADOS DE INVESTIGACIÓN</h3><p>Lorem ipsum. Apartado en construcción.</p></section><section><h3>DIÁLOGOS CON LA IA</h3><p>Lorem ipsum. Apartado en construcción.</p></section><section><h3>DATOS ABIERTOS</h3><p>Documentación y publicación de datos en preparación.</p></section></div>
+    <p class="about-note">Los lugares combinan anclajes históricos con hipótesis espaciales de lectura. Los diálogos se distinguen entre fragmentos de la novela y reinterpretaciones contemporáneas.</p>
+  </div>
 </section>
 <div id="loader" class="loader" aria-live="polite"><span>Una ciudad comienza a aparecer…</span></div>
 <div id="error" class="error" role="alert" hidden><h2>El mundo no pudo iniciarse</h2><p id="error-message">Revisa que tu navegador permita WebGL.</p><button id="retry">Reintentar</button></div>
