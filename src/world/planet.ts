@@ -111,7 +111,7 @@ function crownContours(parent:T.Group){
 }
 function roadPath(edge:typeof EDGES[number]){
  const s=NODES[nodeIndex.get(edge.from)!],t=NODES[nodeIndex.get(edge.to)!];
- const all:[[number,number],...[number,number][]]=[[s.x,s.z],...(edge.control??[]),[t.x,t.z]];
+ const all:[[number,number],...[number,number][]]=[[s.x,s.z],...(edge.control??[]).map(([x,z])=>[x*SPREAD,z*SPREAD] as [number,number]),[t.x,t.z]];
  const curve=new T.CatmullRomCurve3(all.map(([x,z])=>new T.Vector3(x,0,z)),false,'centripetal',.26);
  const count=Math.max(24,Math.ceil(curve.getLength()*13)),pts:T.Vector3[]=[];
  for(let i=0;i<=count;i++){const p=curve.getPoint(i/count);pts.push(terrain(p.x,p.z,.105))}
