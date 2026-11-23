@@ -134,8 +134,8 @@ function continueFrom(node:number,inbound:T.Vector3,backwards=false){
  }
  const candidates=optionsAt(node,inbound,track.index);
  if(!next)next=candidates[selection%candidates.length];
- if(!next){ // En un extremo de la red se puede darse vuelta y volver a recorrer el camino.
-   direction=direction===1?-1:1;distance=direction===1?.045:track.total-.045;selection=0;return;
+ if(!next){ // En un extremo de la red se detiene, sin teleportar al otro extremo del tramo.
+   distance=direction===1?.045:track.total-.045;walkVelocity=0;selection=0;return;
  }
  if(!backwards)travelHistory.push({route:track.index,heading:direction});
  track=next;direction=track.from===node?1:-1;
