@@ -1,0 +1,23 @@
+LA BOGOTÁ SATÍRICA DE SIN REMEDIO — V08
+
+1. Descomprime La_Bogota_Satirica_V08_Para_Probar.zip en el Escritorio.
+2. Abre Terminal y ejecuta:
+
+cd ~/Desktop/Bogota_Satirica_V08
+npm ci
+npm run dev
+
+3. Abre http://localhost:5173/ en el navegador.
+
+Controles:
+- Arrastra la esfera con el ratón. En móvil, desliza con el dedo.
+- W / flecha arriba: entrar al recorrido; después avanzar por rutas.
+- S / flecha abajo: retroceder.
+- A/D: escoger desvíos en cruces.
+- En las escenas, avanzar y retroceder repasa cada acción o diálogo.
+- El texto al costado es una acotación; los parlamentos aparecen cerca del personaje.
+- Las alternativas aparecen después de la escena, no durante ella.
+- ESC: salir; N: pasar al siguiente tramo de día/noche.
+
+IMPORTANTE: V08 es un prototipo artístico/jugable, no una obra cerrada.
+Si `cd` indica que la carpeta no existe, comprueba su nombre en el Escritorio con `ls ~/Desktop`.

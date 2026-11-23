@@ -16,6 +16,7 @@ const RAW_PLACES:PlaceDef[]=[
  {id:'cerros',name:'CERROS ORIENTALES',area:'Horizonte no transitable',x:8.35,z:-.45,scale:1.00,scene:false,kind:'paisaje'}
 ];
 export const SPREAD=1.35;
+/** Interpretative proportional displacement: preserve relative geography, increase breathing room. */
 export const PLACES:PlaceDef[]=RAW_PLACES.map(p=>({...p,x:p.x*SPREAD,z:p.z*SPREAD}));
 export type NodeDef={id:string;x:number;z:number;entry?:PlaceId;label?:string};
 // Vías interconectadas: Séptima N-S, Calle 26 E-O, ramales barriales. 
