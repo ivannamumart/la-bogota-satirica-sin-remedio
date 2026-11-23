@@ -4,7 +4,7 @@
 import * as T from 'three';
 import {paint,block,cylinder,sphere,pathStroke,sign,solid,seeded,cone,torus} from './art';
 import {type PlaceId} from '../data/layout';
-const I=paint('charcoal',0x555c5b),BR=paint('brick',0xdfb49a),CREAM=paint('plaster',0xf8f5e7),DARK=paint('charcoal',0x48565e),BLUE=paint('bluegray',0xafc1c6),WINDOW=paint('slate',0xb1cad1),STONE=paint('stone',0xf5f0e5),TILE=paint('terracotta',0xc68c76),WOOD=paint('wood',0xb5a08d),GOLD=paint('gold',0xf6dab1);
+const I=paint('charcoal',0x555c5b),BR=paint('brick',0xd0a186),CREAM=paint('plaster',0xf8f5e7),DARK=paint('charcoal',0x48565e),BLUE=paint('bluegray',0xafc1c6),WINDOW=paint('slate',0xb1cad1),STONE=paint('stone',0xe4dfd3),TILE=paint('terracotta',0xb9836c),WOOD=paint('wood',0xb5a08d),GOLD=paint('gold',0xf6dab1);
 function cub(g:T.Group,w:number,h:number,d:number,m:T.Material,x=0,y=h/2,z=0){return block(g,w,h,d,m,x,y,z)}
 function line(g:T.Group,p:T.Vector3[],col=0x363e3b,r=.015){return pathStroke(g,p,col,r,.8)}
 function beam(g:T.Group,x1:number,y1:number,z1:number,x2:number,y2:number,z2:number,rad=.025,mat:T.Material=WOOD){const a=new T.Vector3(x1,y1,z1),b=new T.Vector3(x2,y2,z2);const axis=b.clone().sub(a);const q=new T.Mesh(new T.CylinderGeometry(rad,rad,axis.length(),8),mat);q.position.copy(a.add(b).multiplyScalar(.5));q.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),axis.normalize());g.add(q);return q;}
@@ -14,6 +14,14 @@ function roof(g:T.Group,w:number,d:number,h:number,kind:'tile'|'slate'|'flat'|'m
  const geo=new T.BufferGeometry();const x=w/2+.20,k=d/2+.17;const peak=kind==='mansard'?.72:.52;
  const v=[-x,h,-k,0,h+peak,-k,x,h,-k,-x,h,k,0,h+peak,k,x,h,k];geo.setAttribute('position',new T.Float32BufferAttribute(v,3));geo.setIndex([0,3,1,1,3,4,1,4,2,2,4,5]);geo.computeVertexNormals();const mesh=new T.Mesh(geo,new T.MeshStandardMaterial({map:(m as T.MeshStandardMaterial).map,color:0xffffff,side:T.DoubleSide,roughness:1}));mesh.receiveShadow=true;g.add(mesh);
  for(let j=0;j<6;j++){const z0=-k+j*(d+.34)/5;beam(g,-x,h,z0,0,h+peak,z0,.009,STONE);beam(g,0,h+peak,z0,x,h,z0,.009,STONE)}
+ // Gable ends: the roof reads as a building, not two floating sheets.
+ for(const end of [-1,1]){
+  const face=new T.Shape();face.moveTo(-x,h);face.lineTo(0,h+peak);face.lineTo(x,h);face.closePath();
+  const tri=new T.Mesh(new T.ShapeGeometry(face),kind==='slate'?STONE:CREAM);
+  tri.position.z=end*(k-.04);if(end<0)tri.rotation.y=Math.PI;g.add(tri);
+  beam(g,-x,h,end*k,0,h+peak,end*k,.024,TILE);beam(g,0,h+peak,end*k,x,h,end*k,.024,TILE);
+ }
+ beam(g,0,h+peak,-k,0,h+peak,k,.022,STONE);
 }
 function window(g:T.Group,x:number,y:number,z:number,w=.48,h=.60,arch=false,bar=true){
  cub(g,w+.12,h+.12,.075,STONE,x,y,z+.011);
@@ -62,6 +70,8 @@ function contactShadow(g:T.Group,w:number,d:number){
  mesh.rotation.x=-Math.PI/2;mesh.position.y=.036;mesh.renderOrder=3;g.add(mesh);
 }
 function gardenBase(g:T.Group,r:number,kind:'garden'|'stone'|'night'|'quiet'='garden'){
+ // A halo of terrain rather than a separate platform; preserves negative space.
+ r *= .84;
  const segments=56, rings=7, positions:number[]=[],colors:number[]=[],faces:number[]=[];
  const core=new T.Color(kind==='stone'?0xc2b9a6:kind==='night'?0xaaa9a1:kind==='quiet'?0xa5b0a0:0xabbba3);
  const edge=new T.Color(0xa5b49b);
@@ -90,10 +100,48 @@ function balcony(g:T.Group,x:number,y:number,z:number,w=.78){
  beam(g,x-w*.46,y+.37,z+.34,x+w*.46,y+.37,z+.34,.017,I);
  for(let j=-2;j<=2;j++)beam(g,x+j*w*.20,y+.05,z+.34,x+j*w*.20,y+.35,z+.34,.010,I);
 }
+/** Jardineras de andén con textura y volumen suave: pocas unidades deliberadas. */
+function planter(g:T.Group,x:number,z:number,width=.54){
+ const earth=paint('olive',0x879779),terracotta=paint('terracotta',0xac7d68);
+ cub(g,width,.24,.32,terracotta,x,.13,z);
+ cub(g,width-.06,.05,.29,earth,x,.27,z);
+ for(let i=0;i<3;i++){
+   const leaf=sphere(g,.11,paint('olive',i%2?0x829a83:0x9aad90),x+(i-1)*width*.28,.39+(i%2)*.06,z,1);
+   leaf.scale.set(1.23,.84,.88);
+ }
+}
 function awning(g:T.Group,w:number,z:number,y:number,accent:T.Material){
  cub(g,w,.07,.63,accent,0,y,z+.22);
  for(let i=0;i<9;i++)cub(g,w/9,.075,.65,i%2?CREAM:accent,(i-4)*(w/9),y+.014,z+.22);
  for(const sx of [-1,1])beam(g,sx*w*.46,y-.01,z+.18,sx*w*.46,y-.35,z+.02,.018,STONE);
+}
+/** Elevación lateral real: las fachadas no pueden ser caras mudas del cubo. */
+function sideElevation(g:T.Group,x:number,d:number,h:number,style:'brick'|'stucco'|'mansion'|'workshop'|'modern'='brick'){
+ const side=new T.Group();
+ // Plane of the window faces local +Z and is turned toward the exterior +X / -X.
+ side.rotation.y=x>0?Math.PI/2:-Math.PI/2;
+ side.position.x=x;
+ g.add(side);
+ const len=d*.92,levels=h>3.4?[.86,1.64,2.44,3.21]:h>2.8?[.9,1.84,2.62]:[.84,1.81];
+ for(const level of levels){if(level>h-.20)continue;
+  for(const offset of len>2.4?[-.65,0,.65]:[-.44,.44]){
+    window(side,offset,level,.085,style==='modern'?.38:.36,style==='modern'?.43:.48,style==='mansion',style==='brick');
+  }
+ }
+ // Basamento, juntas y cornisa continúan por los costados.
+ cub(side,len,.17,.16,STONE,0,.115,.10);
+ cub(side,len+.12,.12,.17,style==='mansion'?STONE:CREAM,0,h-.11,.12);
+ for(let k=0;k<3;k++)cub(side,.025,h*.58,.045,paint('stone',0xcbbca8),-len*.34+k*len*.34,h*.50,.133);
+}
+function sideNightFacade(g:T.Group,x:number,d:number,h:number){
+ const group=new T.Group();group.rotation.y=x>0?Math.PI/2:-Math.PI/2;group.position.x=x;g.add(group);
+ for(const z of [-.65,.65]){
+   const frame=paint('charcoal',0x444b4b);
+   cub(group,.64,1.20,.070,frame,z,1.63,.08);
+   cub(group,.51,1.07,.080,paint('purple',0x9c8497),z,1.63,.13);
+   cub(group,.022,1.11,.09,GOLD,z,1.63,.18);
+ }
+ for(const y of [.28,2.74])cub(group,d+.10,.12,.18,paint('olive',0x8c9a86),0,y,.10);
 }
 function residence(g:T.Group,w:number,d:number,h:number,kind:'brick'|'stucco'|'mansion'|'workshop'='brick'){
  const wall=kind==='stucco'?CREAM:kind==='mansion'?paint('stone',0xcbb29b):kind==='workshop'?paint('ochre',0xae8266):BR;
@@ -117,6 +165,7 @@ function residence(g:T.Group,w:number,d:number,h:number,kind:'brick'|'stucco'|'m
    window(back,xx,yy,d/2-.055,.42,.54,kind==='mansion',false);
  }
  for(const xx of [-w*.46,w*.46])cub(back,.10,h,.14,STONE,xx,h/2,d/2-.025);
+ sideElevation(g,-w/2,d,h,kind);sideElevation(g,w/2,d,h,kind);
  roof(g,w,d,h,kind==='mansion'?'mansard':'tile');
  for(let k=0;k<6;k++){const yy=.30+k*.45;if(yy<h-.2)beam(g,-w*.46,yy,-d*.49,w*.46,yy,-d*.49,.007,paint('stone',0xb4aca3))}
  // Costados con ventanería reconocible en vistas de cámara oblicua
@@ -154,6 +203,7 @@ function neoclassical(g:T.Group){residence(g,3.8,2.3,3.02,'mansion');const z=1.2
 function modern(g:T.Group,w=2.5,h=4.35){cub(g,w,h,2.00,STONE,0,h/2);for(let y=.62;y<h-.45;y+=.67){for(let x=-w*.33;x<=w*.36;x+=.57){window(g,x,y,1.05,.44,.43,false,false)}}
  const rear=new T.Group();rear.rotation.y=Math.PI;g.add(rear);
  for(let y=.65;y<h-.36;y+=.69)for(let x=-w*.29;x<=w*.30;x+=.62)window(rear,x,y,1.05,.39,.41,false,false);
+ sideElevation(g,-w/2,2.00,h,'modern');sideElevation(g,w/2,2.00,h,'modern');
  cub(g,w+.2,.18,2.18,CREAM,0,h+.04);doorway(g,1.05,.72,1.38,true);
  cub(g,2.00,.35,.49,STONE,0,1.37,1.26);
 }
@@ -163,6 +213,7 @@ function nightclub(g:T.Group){const front=1.41;
  for(let x of [-1.41,-.75,.75,1.41]){window(g,x,1.60,front,.53,.79,false,false)}
  const back=new T.Group();back.rotation.y=Math.PI;g.add(back);
  for(const x of [-1.40,-.50,.50,1.40])window(back,x,1.51,front,.47,.65,false,false);
+ sideNightFacade(g,-4.25/2,2.82,2.86);sideNightFacade(g,4.25/2,2.82,2.86);
  doorway(g,front,.92,1.55);cub(g,3.4,.20,.70,paint('purple',0xc18b9d),0,2.18,front+.38);
  for(let i=0;i<6;i++){cub(g,.31,.28,.08,paint(i%2?'olive':'purple',i%2?0xb9c98a:0xb968a4),-1.22+i*.48,2.23,front+.46)}
  sign(g,'EL UNICORNIO',3.25,.56,0,3.09,front+.22,'#282d33','#e6bdd1');
@@ -179,6 +230,7 @@ function bar(g:T.Group){const z=1.35;cub(g,3.35,2.50,2.62,paint('ochre',0x947960
  for(let i=0;i<4;i++)window(rear,-1.2+i*.8,1.43,z,.44,.61,false,true);
  for(const sx of [-1,1])cub(rear,.11,2.30,.15,STONE,sx*1.57,1.15,z+.05);
 
+ sideElevation(g,-3.35/2,2.62,2.50,'workshop');sideElevation(g,3.35/2,2.62,2.50,'workshop');
  doorway(g,z,.82,1.40);cub(g,3.55,.14,.66,TILE,0,1.94,z+.21);sign(g,'MUSIC BAR · EL OASIS',3.03,.35,0,2.30,z+.12,'#eedab4','#4c5c4f');
  cub(g,3.3,.09,.42,CREAM,0,.24,z+.42);
  for(let i=0;i<3;i++)cub(g,.04,.23,.20,WOOD,-1.04+i*1.04,.34,z+.52);
@@ -205,13 +257,13 @@ function street(g:T.Group){const q1=new T.Group();q1.position.set(-1.37,0,-.60);
 }
 export function buildLandmark(id:PlaceId):T.Group{const g=new T.Group();g.name='edificio_'+id;
  switch(id){
-  case'apartamento':gardenBase(g,2.42,'quiet');residence(g,3.40,2.35,2.97,'brick');trees(g,[[-2.2,1.0,1.18],[2.3,1.1,1.31]],'urban');cub(g,3.7,.07,.60,STONE,0,.045,1.46);
+  case'apartamento':gardenBase(g,2.42,'quiet');residence(g,3.40,2.35,2.97,'brick');planter(g,1.08,1.67,.62);trees(g,[[-2.2,1.0,1.18],[2.3,1.1,1.31]],'urban');cub(g,3.7,.07,.60,STONE,0,.045,1.46);
     for(let k=-2;k<=2;k++){const tile=cub(g,.48,.024,.35,paint('stone',k%2?0xdbd0bf:0xe4dbcc),k*.49,.038,1.80);tile.rotation.y=k*.028}break;
-  case'casa_familiar':gardenBase(g,3.05,'stone');residence(g,4.33,3.42,3.25,'mansion');trees(g,[[-2.8,1.9,1.9],[2.87,1.8,1.75]],'garden');for(let i=0;i<4;i++)cub(g,3.9-i*.25,.07,.31,STONE,0,.06+i*.07,2.02+i*.26);break;
-  case'taller':gardenBase(g,2.30,'quiet');studio(g);break;
+  case'casa_familiar':gardenBase(g,3.05,'stone');residence(g,4.33,3.42,3.25,'mansion');planter(g,1.49,1.97,.71);trees(g,[[-2.8,1.9,1.9],[2.87,1.8,1.75]],'garden');for(let i=0;i<4;i++)cub(g,3.9-i*.25,.07,.31,STONE,0,.06+i*.07,2.02+i*.26);break;
+  case'taller':gardenBase(g,2.30,'quiet');studio(g);planter(g,1.65,1.73,.60);break;
   case'oasis':gardenBase(g,2.52,'quiet');bar(g);break;
   case'unicornio':gardenBase(g,3.05,'night');nightclub(g);break;
-  case'jockey':gardenBase(g,2.80,'stone');neoclassical(g);break;
+  case'jockey':gardenBase(g,2.80,'stone');neoclassical(g);planter(g,-2.0,1.87,.72);break;
   case'porciuncula':gardenBase(g,3.05,'stone');church(g);break;
   case'parque':gardenBase(g,2.52,'garden');park(g);break;
   case'oficina':gardenBase(g,2.07,'stone');modern(g,2.60,3.95);break;

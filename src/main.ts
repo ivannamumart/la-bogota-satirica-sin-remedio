@@ -1,4 +1,4 @@
-/** LA BOGOTÁ SATÍRICA DE SIN REMEDIO · V04
+/** LA BOGOTÁ SATÍRICA DE SIN REMEDIO · V06
  * Cartografía especulativa de Bogotá, 1972. Modelo de esfera con ciudad únicamente arriba.
  * Navegación por red vial, entrada automática al alcanzar el umbral; microescenas 3D.
  */
@@ -13,8 +13,8 @@ import './ui/styles.css';
 const el=<E extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as E;
 const mount=el('world'),subtitles=el('subtitles'),speaker=el('speaker'),subtitleText=el('subtitle-text'),source=el('source'),decisions=el('decisions'),choices=el('choices'),caption=el('place-caption'),hint=el('scene-hint'),veil=el('fade'),about=el('about'),roadHint=el('road-hint');
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(35,window.innerWidth/window.innerHeight,.10,260);
-const targetOverview=new T.Vector3(0,3.4,0);
-camera.position.set(-18,34,40);camera.lookAt(targetOverview);
+const targetOverview=new T.Vector3(0,4.8,0);
+camera.position.set(-10,43,40);camera.lookAt(targetOverview);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.35));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.10;renderer.shadowMap.enabled=false;mount.appendChild(renderer.domElement);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.copy(targetOverview);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=29;orbit.maxDistance=65;orbit.maxPolarAngle=Math.PI*.67;orbit.minPolarAngle=.11;orbit.rotateSpeed=.46;orbit.autoRotate=true;orbit.autoRotateSpeed=.20;
@@ -35,8 +35,8 @@ for(const site of [...buildings.values(),...world.children.filter(o=>o.name.star
  });
 }
 const cameraRay=new T.Ray(),cameraHit=new T.Vector3();
-const cameraVolumes=[...buildings.values(),...world.children.filter(o=>o.name.startsWith('hito_no_jugable_'))]
- .map(o=>new T.Box3().setFromObject(o));
+const occluderGroups=[...buildings.values(),...world.children.filter(o=>o.name.startsWith('hito_no_jugable_'))];
+const cameraVolumes=occluderGroups.map(o=>new T.Box3().setFromObject(o));
 function occlusionPenalty(from:T.Vector3,to:T.Vector3){
  const ray=new T.Ray(from,to.clone().sub(from).normalize()),dist=from.distanceTo(to);let hits=0;
  for(const box of cameraVolumes){
@@ -61,28 +61,24 @@ function clearDistance(focus:T.Vector3,wanted:T.Vector3){
  * la cámara entre fachadas de tamaño fantástico. Conserva la dirección de marcha.
  */
 function walkingShot(){
- // Cámara en tercera persona, cercana a Ignacio y orientada al camino.
+ // Cámara de tercer persona a escala humana, nunca un vuelo sobre los tejados.
  const f=lastHeroDir.clone().setY(0).normalize();
  const side=new T.Vector3(-f.z,0,f.x);
- const focus=lastHeroPos.clone().addScaledVector(f,1.55).add(new T.Vector3(0,1.18,0));
- const origin=lastHeroPos.clone().addScaledVector(f,-3.55).add(new T.Vector3(0,3.25,0));
- const variants=[
-   origin.clone().addScaledVector(side,1.50),
-   origin.clone().addScaledVector(side,-1.50),
-   origin.clone(),
-   origin.clone().addScaledVector(side,2.35).add(new T.Vector3(0,.85,0)),
-   origin.clone().addScaledVector(side,-2.35).add(new T.Vector3(0,.85,0))
+ const focus=lastHeroPos.clone().addScaledVector(f,.35).add(new T.Vector3(0,1.05,0));
+ const origin=lastHeroPos.clone().addScaledVector(f,-3.85).add(new T.Vector3(0,2.85,0));
+ const options=[
+  origin.clone().addScaledVector(side,1.45),
+  origin.clone().addScaledVector(side,-1.45),
+  origin.clone().addScaledVector(side,2.4),
+  origin.clone().addScaledVector(side,-2.4),
+  origin.clone()
  ];
- let best=variants[0],score=Infinity;
- for(const v of variants){
-  const obstacles=occlusionPenalty(focus,v);
-  const clearance=clearDistance(focus,v);
-  const err=obstacles*80+(v.distanceTo(focus)-clearance)*6+Math.abs(v.x-lastHeroPos.x)*.025;
-  if(err<score){score=err;best=v}
- }
- const available=clearDistance(focus,best);
- const wanted=focus.clone().lerp(best,Math.min(1,available/Math.max(.001,focus.distanceTo(best))));
- return {focus,wanted};
+ let chosen=options[0],lowest=Infinity;
+ for(const candidate of options){const penalty=occlusionPenalty(focus,candidate)*10+Math.abs(candidate.x-lastHeroPos.x)*.03;
+  if(penalty<lowest){chosen=candidate;lowest=penalty;}}
+ // Evitamos acercarnos artificialmente a Ignacio dentro de una fachada;
+ // los edificios que cruzan la línea de visión se ocultan durante el render.
+ return {focus,wanted:chosen};
 }
 
 const hero=character('escobar',.76);world.add(hero.root);
@@ -192,7 +188,7 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
   camera.position.lerp(desired,1-Math.exp(-dt*1.7));camera.up.set(0,1,0);camera.lookAt(aim)
  }
 }
-function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-18,34,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
+function toOverview(){if(mode==='interior'){leave();return}camera.fov=35;camera.updateProjectionMatrix();mode='overview';orbit.enabled=true;orbit.autoRotate=true;orbit.target.copy(targetOverview);camera.position.set(-10,43,40);camera.up.set(0,1,0);camera.lookAt(targetOverview);orbit.update();caption.classList.remove('visible');roadHint.classList.remove('visible')}
 function beginWalking(){if(mode!=='overview')return;camera.fov=50;camera.updateProjectionMatrix();mode='walk';orbit.enabled=false;orbit.autoRotate=false;const {focus,wanted}=walkingShot();camera.position.copy(wanted);camera.up.set(0,1,0);camera.lookAt(focus);caption.classList.remove('visible')}
 function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt=Math.sin(p*2*Math.PI+.45),daylight=T.MathUtils.smoothstep(alt,-.20,.65),golden=Math.pow(1-Math.abs(alt-.08),4);
  sun.position.set(31*Math.cos(p*2*Math.PI),25*alt,28*Math.sin(p*2*Math.PI));sun.intensity=(.48+3.0*daylight)*(mode==='interior'?.26:1);sun.color.setRGB(1,.75+.21*daylight,.61+.34*daylight);
@@ -202,7 +198,27 @@ function dayNight(dt:number){timeOfDay+=dt;const p=(timeOfDay%300)/300;const alt
 }
 let last=performance.now(),elapsed=0;function tick(now:number){requestAnimationFrame(tick);const wall=Math.min((now-last)/1000,2.5),dt=Math.min(wall,.050);last=now;elapsed+=wall;
  if(!paused){dayNight(wall);if(mode==='walk')handleWalk(dt,elapsed);else if(mode==='overview')hero.update(elapsed,false);else if(mode==='interior')updateInterior(dt,elapsed,wall);followCamera(dt,elapsed)}
- renderer.render(scene,camera)
+ // Oclusión dinámica: si un edificio se interpone entre la cámara y
+ // Escobar, solo durante ESTE fotograma se retira visualmente esa fachada.
+ // No altera el mundo, las colisiones ni la llegada a las escenas.
+ const hidden:T.Object3D[]=[];
+ if(mode==='walk'){
+  const target=lastHeroPos.clone().add(new T.Vector3(0,1.03,0));
+  const toHero=target.sub(camera.position),dist=toHero.length();
+  if(dist>.01){
+   const ray=new T.Ray(camera.position.clone(),toHero.normalize());
+   for(let i=0;i<occluderGroups.length;i++){
+    const group=occluderGroups[i],box=cameraVolumes[i];
+    if(!group.visible)continue;
+    const hit=ray.intersectBox(box,new T.Vector3());
+    if(box.containsPoint(camera.position)||(hit&&camera.position.distanceTo(hit)<dist-.15)){
+      group.visible=false;hidden.push(group);
+    }
+   }
+  }
+ }
+ renderer.render(scene,camera);
+ for(const group of hidden)group.visible=true;
 }
 window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.35))});
 window.addEventListener('keydown',e=>{

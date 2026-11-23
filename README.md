@@ -1,8 +1,8 @@
-# La Bogotá satírica de *Sin remedio* — V05 (revisión de dirección de arte)
+# La Bogotá satírica de *Sin remedio* — V06 (revisión de dirección de arte)
 
 Experiencia web en **Three.js + TypeScript + Vite** basada en una cartografía especulativa de la Bogotá narrativa de Antonio Caballero. La esfera completa conserva un acabado de cemento gris y la corona superior aloja once escenarios interactivos, más el paisaje no transitable de los Cerros Orientales.
 
-## Qué se rehizo en V05
+## Qué se rehizo en V06
 
 - Reorganización de la planta maestra para separar mejor los edificios principales, manteniendo las relaciones geográficas interpretativas.
 - Arquitecturas narrativas más grandes, fachadas con ladrillo, cornisas, balcones, escalinatas, toldos y accesos reconocibles.
@@ -43,3 +43,7 @@ La ubicación y escala son **escenográficas e interpretativas**, no coordenadas
 - `npm run build`: compilación y auditoría TypeScript.
 - `node tests/smoke.mjs` con servidor de previsualización en `4173`: prueba WebGL de escenas, movimiento, controles, luna y ciclo.
 - GitHub Actions ejecuta esas verificaciones y conserva capturas como artefacto QA.
+
+## Dirección de arte V06
+
+La V06 separa conjuntos urbanos y vuelve visibles los costados y hastiales de las arquitecturas. Véase `docs/REVISION_VISUAL_V06.md`. Los esquemas PDF V04 se conservan como antecedente, pero las coordenadas y entradas vigentes están en `src/data/layout.ts`.

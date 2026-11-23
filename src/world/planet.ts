@@ -34,7 +34,7 @@ function texturedGraySphere(){
  const g=new T.SphereGeometry(R,128,94),a=g.getAttribute('position'),c:number[]=[];
  for(let i=0;i<a.count;i++){
    const p=new T.Vector3().fromBufferAttribute(a,i);const v=Math.sin(p.x*4.2+p.y*2.9)*.012+Math.sin(p.z*7+p.x*6)*.008;
-   const col=new T.Color(0xb4b4ad).multiplyScalar(1+v*0.8);c.push(col.r,col.g,col.b)
+   const col=new T.Color(0xbcbcb6).multiplyScalar(1+v*0.7);c.push(col.r,col.g,col.b)
  }
  g.setAttribute('color',new T.Float32BufferAttribute(c,3));
  const m=new T.MeshStandardMaterial({map:paint('stone').map!,vertexColors:true,roughness:1});const mesh=new T.Mesh(g,m);mesh.receiveShadow=true;return mesh;
@@ -111,8 +111,8 @@ function road(edge:typeof EDGES[number],index:number):Track{
  const g=new T.Group(),main=edge.kind==='septima'||edge.kind==='veintiseis',w=edge.kind==='sendero'?.29:main?.69:.49;
  // borde de andén bajo una calzada real, no camino de color beige.
  ribbon(g,pts,w+.25,paint('stone',0xd6cbbb));ribbon(g,pts,w,paint('slate',main?0x535d61:0x69706c),.010);
- if(main){const marks:T.Vector3[][]=[];for(let d=.4;d<total-.23;d+=.88){const a=interpolatePolyline(pts,lengths,d),b=interpolatePolyline(pts,lengths,Math.min(total-.07,d+.29));marks.push([a.clone().add(new T.Vector3(0,.035,0)),b.clone().add(new T.Vector3(0,.035,0))])}
- const lines=new T.BufferGeometry().setFromPoints(marks.flat());g.add(new T.LineSegments(lines,new T.LineBasicMaterial({color:0xd8d6cb,transparent:true,opacity:.8})))
+ if(main){const marks:T.Vector3[][]=[];for(let d=.5;d<total-.23;d+=1.15){const a=interpolatePolyline(pts,lengths,d),b=interpolatePolyline(pts,lengths,Math.min(total-.07,d+.29));marks.push([a.clone().add(new T.Vector3(0,.035,0)),b.clone().add(new T.Vector3(0,.035,0))])}
+ const lines=new T.BufferGeometry().setFromPoints(marks.flat());g.add(new T.LineSegments(lines,new T.LineBasicMaterial({color:0xd6d1c4,transparent:true,opacity:.61})))
  }
  const from=nodeIndex.get(edge.from)!,to=nodeIndex.get(edge.to)!;
  const startDir=pts[1].clone().sub(pts[0]).normalize(),endDir=pts[pts.length-1].clone().sub(pts[pts.length-2]).normalize();
@@ -132,8 +132,8 @@ function vegetation(world:T.Group){const rand=seeded(1972),spots:[number,number,
  ];
  for(const [x,z,s] of spots){const t=tree('urban',s);t.position.copy(terrain(x,z,.08));world.add(t)}
  // Vegetación andina sobre los cerros, sin pinos: follaje irregular, no bosque navideño.
- for(let i=0;i<52;i++){
-  const x=5.5+rand()*3.5,z=-6.1+rand()*12.2;if(Math.hypot(x,z)>9.55)continue;
+ for(let i=0;i<42;i++){
+  const x=5.5+rand()*3.5,z=-6.1+rand()*12.2;if(Math.hypot(x,z)>9.55||PLACES.some(p=>p.scene&&Math.hypot(x-p.x,z-p.z)<2.0))continue;
   const s=.43+rand()*.74,t=tree('cerro',s);t.position.copy(terrain(x,z,.07));world.add(t)
  }
 }
@@ -143,7 +143,7 @@ function chapel(world:T.Group,x:number,z:number,scale:number){const g=new T.Grou
  block(g,.18,.31,.04,paint('charcoal'),0,.17,.332);block(g,.05,.42,.04,stone,0,1.28,0);block(g,.21,.055,.055,stone,0,1.40,0);world.add(g)
 }
 function vehicles(world:T.Group){
- const points:[number,number,'bus'|'taxi',number][]=[[-3.95,4.18,'bus',.07],[-1.85,4.08,'taxi',.15],[2.45,4.18,'taxi',-.12],[.0,-3.85,'bus',Math.PI/2],[0,5.4,'taxi',Math.PI/2]];
+ const points:[number,number,'bus'|'taxi',number][]=[[-4.95,4.07,'bus',.07],[-1.85,4.08,'taxi',.15],[2.45,4.18,'taxi',-.12],[.0,-3.85,'bus',Math.PI/2]];
  points.forEach(([x,z,type,angle])=>{const v=eraVehicle(type);v.position.copy(terrain(x,z,.18));v.rotation.y=angle;v.scale.setScalar(type==='bus'?.88:.88);world.add(v)})
 }
 export function createPlanet(){
