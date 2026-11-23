@@ -24,21 +24,43 @@ const fill=new T.DirectionalLight(0x95b4b3,1.0);fill.position.set(15,8,-18);scen
 const starPos:number[]=[];let seed=1729;for(let i=0;i<550;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const y=seed/4294967296*2-1;seed=(Math.imul(seed,1664525)+1013904223)>>>0;const a=seed/4294967296*Math.PI*2;starPos.push(105*Math.sqrt(1-y*y)*Math.cos(a),105*y,105*Math.sqrt(1-y*y)*Math.sin(a))}
 const starGeo=new T.BufferGeometry();starGeo.setAttribute('position',new T.Float32BufferAttribute(starPos,3));const starMat=new T.PointsMaterial({color:0xf6f6e8,size:.55,opacity:0,transparent:true,depthWrite:false});scene.add(new T.Points(starGeo,starMat));
 const {world,routes,buildings}=createPlanet();scene.add(world);
-// Cajas de colisión estáticas: evitan que la cámara atraviese edificios al seguir a Escobar.
+// Volúmenes de fachadas y cubiertas para resolver oclusión de la cámara de tercera persona.
+// Usamos cajas de cada malla estructural, evitando cajas globales que incluyen calles vacías.
 world.updateMatrixWorld(true);
-const cameraObstacles=[...buildings.values(),...world.children.filter(o=>o.name.startsWith('hito_no_jugable_'))]
- .map(o=>new T.Box3().setFromObject(o)).filter(box=>!box.isEmpty());
+const cameraObstacles:T.Box3[]=[];
+for(const site of [...buildings.values(),...world.children.filter(o=>o.name.startsWith('hito_no_jugable_'))]){
+ site.traverse(o=>{const mesh=o as T.Mesh;if(!mesh.isMesh)return;
+   const bounds=new T.Box3().setFromObject(mesh),size=bounds.getSize(new T.Vector3());
+   if(size.y>.55 && (size.x>.65||size.z>.65))cameraObstacles.push(bounds);
+ });
+}
 const cameraRay=new T.Ray(),cameraHit=new T.Vector3();
-function safeCamera(focus:T.Vector3,wanted:T.Vector3){
- const ray=wanted.clone().sub(focus),length=ray.length();if(length<.01)return wanted;
- cameraRay.origin.copy(focus);cameraRay.direction.copy(ray).divideScalar(length);
+function clearDistance(focus:T.Vector3,wanted:T.Vector3){
+ const diff=wanted.clone().sub(focus),length=diff.length();if(length<.01)return 0;
+ cameraRay.origin.copy(focus);cameraRay.direction.copy(diff).divideScalar(length);
  let available=length;
  for(const obstacle of cameraObstacles){
   if(obstacle.containsPoint(focus))continue;
   const hit=cameraRay.intersectBox(obstacle,cameraHit);
-  if(hit){const d=focus.distanceTo(hit);if(d>.10)available=Math.min(available,Math.max(.9,d-.38));}
+  if(hit){const d=focus.distanceTo(hit);if(d>.10)available=Math.min(available,Math.max(.75,d-.30));}
  }
- return focus.clone().addScaledVector(cameraRay.direction,available);
+ return available;
+}
+function safeCamera(focus:T.Vector3,wanted:T.Vector3){
+ const offset=wanted.clone().sub(focus),horizontal=new T.Vector3(offset.x,0,offset.z),rise=offset.y;
+ let best=wanted,bestScore=-Infinity;
+ // Buscar primero una vista detrás de Escobar; desplazarla hacia el costado solo si hay oclusión.
+ for(const elevation of [1,1.35,1.75,2.30]){
+  for(const yaw of [0,.34,-.34,.69,-.69,1.02,-1.02,1.36,-1.36]){
+   const candidate=focus.clone().add(horizontal.clone().applyAxisAngle(new T.Vector3(0,1,0),yaw)).add(new T.Vector3(0,rise*elevation,0));
+   const length=candidate.distanceTo(focus),clear=clearDistance(focus,candidate);
+   const visibility=clear/Math.max(.001,length),score=visibility-.08*Math.abs(yaw)-.10*(elevation-1);
+   if(score>bestScore){bestScore=score;best=focus.clone().lerp(candidate,Math.min(1,clear/length));}
+   // Cuando una vista central es libre, conservarla y evitar giros innecesarios.
+   if(visibility>.985&&Math.abs(yaw)<.01)return candidate;
+  }
+ }
+ return best;
 }
 const hero=character('escobar',.50);world.add(hero.root);
 type Mode='overview'|'walk'|'interior'|'transition';type Phase='arrival'|'canonical'|'choice'|'branch'|'complete';
@@ -137,7 +159,8 @@ function followCamera(dt:number,t:number){if(mode==='overview'){orbit.update();r
   const desired=lastHeroPos.clone().addScaledVector(lastHeroDir,-4.6).add(new T.Vector3(0,3.35,0));
   const focus=lastHeroPos.clone().addScaledVector(lastHeroDir,.65).add(new T.Vector3(0,.78,0));
   const unobstructed=safeCamera(focus,desired);
-  if(camera.position.distanceTo(unobstructed)>3.2)camera.position.copy(unobstructed);
+  if(camera.position.distanceTo(unobstructed)>2.4 || clearDistance(focus,camera.position)<focus.distanceTo(camera.position)-.35)
+   camera.position.copy(unobstructed);
   else camera.position.lerp(unobstructed,1-Math.exp(-dt*5.6));camera.up.lerp(new T.Vector3(0,1,0),1-Math.exp(-dt*3.5)).normalize();camera.lookAt(focus);
  }else if(mode==='interior'&&stage){
   const actor=stage.actors.length?stage.actors[Math.max(0,currentLine)%stage.actors.length]:null;const cinematic=phase==='canonical'||phase==='branch';
