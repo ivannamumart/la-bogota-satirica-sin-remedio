@@ -37,15 +37,24 @@ export function terrainY(x:number,z:number){
  let height=baseHeight(x,z)+local*(1-smooth(8.2,13.8,r));
  // La ladera se transforma en montaña sin montajes superpuestos.
  height+=mountain(x,z);
- // Explanadas orgánicas en cada hito: edificaciones enteramente apoyadas.
+ // Nivelación local continua, limitada a la huella de cada edificio.
+ // La transición posterior no tiene plintos circulares ni cortes verticales:
+ // la propia malla se curva desde el terreno hasta los cimientos.
+ let combined=0,weightedGrade=0;
  for(const p of PLACES){
   if(!p.scene)continue;
   const d=Math.hypot(x-p.x,z-p.z);
-  if(d>=3.20)continue;
-  const factor=1-smooth(1.80,3.20,d);
-  // No modificar la elevación de la ladera de los Cerros.
+  const centerRadius=Math.hypot(p.x,p.z);
+  const footprint=2.75*p.scale*.94+.12;
+  const end=Math.min(footprint+1.0,CAP_R-centerRadius-.12);
+  if(d>=end||end<=0)continue;
+  const influence=1-smooth(Math.max(0,Math.min(footprint,end-.04)),end,d);
   const grade=baseHeight(p.x,p.z)+.018*Math.sin(p.x*1.35+p.z*.3)*Math.cos(p.z*1.2);
-  height=T.MathUtils.lerp(height,grade,factor*.97);
+  combined+=influence;
+  weightedGrade+=influence*grade;
+ }
+ if(combined>0){
+  height=T.MathUtils.lerp(height,weightedGrade/combined,Math.min(.995,combined));
  }
  return height;
 }

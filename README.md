@@ -30,3 +30,5 @@ Las líneas identificadas con referencias P- proceden del corpus previamente val
 - Las bifurcaciones satíricas son escritura original, claramente diferenciada de la novela.
 - La meseta se construye sobre la esfera, no la sustituye: la corona está ligeramente sobre la superficie de cemento, la misma malla genera los Cerros y la ciudad queda restringida al hemisferio superior.
 - Este código es una iteración para la revisión académica y estética. La compilación/WebGL son verificaciones técnicas, no una certificación de calidad artística final ni una garantía de cero errores en dispositivos reales.
+
+V08 · segunda revisión del soporte: los basamentos se apoyan sobre explanadas locales calculadas por huella, y los conjuntos más próximos al borde se desplazan ligeramente hacia el interior para mantener la corona continua.
